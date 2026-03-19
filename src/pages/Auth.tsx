@@ -73,7 +73,7 @@ const Auth = () => {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <span className="text-4xl">⚽</span>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight mt-3">Training Architect</h1>
+          <h1 className="text-xl font-semibold text-foreground tracking-tight mt-3">myTraining</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login" ? "Sign in to your account" : mode === "signup" ? "Create your account" : "Reset your password"}
           </p>

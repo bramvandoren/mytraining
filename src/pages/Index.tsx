@@ -80,7 +80,7 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <span className="text-xl">⚽</span>
               <h1 className="font-semibold text-foreground tracking-tight text-lg hidden sm:block">
-                Training Architect
+                myTraining
               </h1>
             </div>
             <div className="flex items-center gap-1">
