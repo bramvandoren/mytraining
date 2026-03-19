@@ -13,7 +13,6 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
   useEffect(() => {
     if (user) navigate("/", { replace: true });
@@ -50,7 +49,7 @@ const Auth = () => {
       password,
       options: {
         data: { display_name: chosenName },
-        emailRedirectTo: `${appUrl}/auth`,
+        emailRedirectTo: window.location.origin,
       },
     });
     if (error) toast.error(error.message);
@@ -62,7 +61,7 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${appUrl}/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) toast.error(error.message);
     else toast.success("Check your email for a reset link");
