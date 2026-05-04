@@ -7,14 +7,12 @@ interface SessionStore {
   sessionName: string;
   sessionDate: string;
   sessionAgeGroup: AgeGroup;
-  
-  // Saved sessions
-  savedSessions: TrainingSession[];
-  
+  editingSessionId: string | null;
+
   // Matchday mode
   activeSession: TrainingSession | null;
   activeExerciseIndex: number;
-  
+
   // Actions
   addExercise: (exercise: Exercise) => void;
   removeExercise: (id: string) => void;
@@ -23,32 +21,20 @@ interface SessionStore {
   setSessionName: (name: string) => void;
   setSessionDate: (date: string) => void;
   setSessionAgeGroup: (ag: AgeGroup) => void;
-  saveSession: () => void;
-  deleteSession: (id: string) => void;
-  loadSession: (session: TrainingSession) => void;
+  loadSession: (session: TrainingSession & { id?: string }) => void;
+  loadFromTemplate: (exercises: SessionExercise[], name?: string) => void;
   startMatchday: (session: TrainingSession) => void;
   stopMatchday: () => void;
   setActiveExerciseIndex: (i: number) => void;
   clearCurrentSession: () => void;
 }
 
-const loadSessions = (): TrainingSession[] => {
-  try {
-    const data = localStorage.getItem('training-sessions');
-    return data ? JSON.parse(data) : [];
-  } catch { return []; }
-};
-
-const saveSessions = (sessions: TrainingSession[]) => {
-  localStorage.setItem('training-sessions', JSON.stringify(sessions));
-};
-
-export const useSessionStore = create<SessionStore>((set, get) => ({
+export const useSessionStore = create<SessionStore>((set) => ({
   currentExercises: [],
   sessionName: '',
   sessionDate: new Date().toISOString().split('T')[0],
   sessionAgeGroup: 'U12',
-  savedSessions: loadSessions(),
+  editingSessionId: null,
   activeSession: null,
   activeExerciseIndex: 0,
 
@@ -87,37 +73,22 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   setSessionDate: (date) => set({ sessionDate: date }),
   setSessionAgeGroup: (ag) => set({ sessionAgeGroup: ag }),
 
-  saveSession: () => {
-    const s = get();
-    if (!s.sessionName.trim() || s.currentExercises.length === 0) return;
-    const session: TrainingSession = {
-      id: `ts-${Date.now()}`,
-      name: s.sessionName,
-      date: s.sessionDate,
-      ageGroup: s.sessionAgeGroup,
-      exercises: s.currentExercises,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [session, ...s.savedSessions];
-    saveSessions(updated);
-    set({
-      savedSessions: updated,
-      currentExercises: [],
-      sessionName: '',
-    });
-  },
-
-  deleteSession: (id) => set((s) => {
-    const updated = s.savedSessions.filter((ss) => ss.id !== id);
-    saveSessions(updated);
-    return { savedSessions: updated };
-  }),
-
   loadSession: (session) => set({
-    currentExercises: session.exercises,
+    currentExercises: session.exercises.map((e, i) => ({ ...e, order: i })),
     sessionName: session.name,
     sessionDate: session.date,
     sessionAgeGroup: session.ageGroup,
+    editingSessionId: session.id ?? null,
+  }),
+
+  loadFromTemplate: (exercises, name) => set({
+    currentExercises: exercises.map((e, i) => ({
+      ...e,
+      id: `se-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+      order: i,
+    })),
+    sessionName: name ?? '',
+    editingSessionId: null,
   }),
 
   startMatchday: (session) => set({
@@ -137,5 +108,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     sessionName: '',
     sessionDate: new Date().toISOString().split('T')[0],
     sessionAgeGroup: 'U12',
+    editingSessionId: null,
   }),
 }));

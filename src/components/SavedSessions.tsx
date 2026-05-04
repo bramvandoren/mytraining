@@ -1,11 +1,22 @@
 import { useSessionStore } from "@/store/sessionStore";
-import { Play, Trash2, Clock, Users, Calendar, Edit3 } from "lucide-react";
+import { useTrainingSessions, useDeleteSession } from "@/hooks/useTrainingSessions";
+import { useProfiles } from "@/hooks/useProfiles";
+import { Play, Trash2, Clock, Users, Calendar, Edit3, User } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function SavedSessions() {
-  const { savedSessions, deleteSession, startMatchday, loadSession } = useSessionStore();
+  const { startMatchday, loadSession } = useSessionStore();
+  const { data: sessions = [], isLoading } = useTrainingSessions();
+  const deleteSession = useDeleteSession();
 
-  if (savedSessions.length === 0) {
+  const creatorIds = [...new Set(sessions.map((s) => s.user_id))];
+  const { data: profiles = {} } = useProfiles(creatorIds);
+
+  if (isLoading) {
+    return <div className="text-center py-12 text-muted-foreground text-sm">Loading sessions...</div>;
+  }
+
+  if (sessions.length === 0) {
     return (
       <div className="text-center py-16 px-4">
         <p className="text-muted-foreground text-sm">No saved sessions yet</p>
@@ -16,20 +27,20 @@ export function SavedSessions() {
 
   return (
     <div className="space-y-3">
-      {savedSessions.map((session, index) => {
-        const totalDuration = session.exercises.reduce((s, e) => s + e.exercise.duration, 0);
+      {sessions.map((session, index) => {
+        const creator = profiles[session.user_id]?.display_name;
         return (
           <motion.div
             key={session.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: index * 0.04 }}
             className="rounded-md bg-card shadow-card p-4 hover:shadow-card-hover transition-shadow"
           >
             <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-foreground tracking-tight">{session.name}</h3>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-foreground tracking-tight truncate">{session.name}</h3>
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1 font-mono tabular-nums">
                     <Calendar className="w-3 h-3" />
                     {session.date}
@@ -40,8 +51,13 @@ export function SavedSessions() {
                   </span>
                   <span className="flex items-center gap-1 font-mono tabular-nums">
                     <Clock className="w-3 h-3" />
-                    {totalDuration}m
+                    {session.total_duration}m
                   </span>
+                  {creator && (
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3" /> {creator}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -75,7 +91,7 @@ export function SavedSessions() {
                 Edit
               </button>
               <button
-                onClick={() => deleteSession(session.id)}
+                onClick={() => deleteSession.mutate(session.id)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all ml-auto"
               >
                 <Trash2 className="w-3 h-3" />

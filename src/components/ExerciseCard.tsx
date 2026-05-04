@@ -1,5 +1,5 @@
 import { Exercise } from "@/data/exercises";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { FieldPreview } from "./FieldPreview";
 import { FieldDiagram } from "@/hooks/useCustomExercises";
@@ -10,6 +10,8 @@ interface ExerciseCardProps {
   isAdded: boolean;
   onClick?: () => void;
   creatorName?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
 const typeColors: Record<string, string> = {
@@ -22,7 +24,7 @@ const typeColors: Record<string, string> = {
   "cool-down": "bg-sky-100 text-sky-700",
 };
 
-export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName, isFavorite, onToggleFavorite }: ExerciseCardProps) {
   const hasVisual = exercise.previewImageUrl || exercise.fieldDiagram;
 
   return (
@@ -35,7 +37,19 @@ export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName }:
       className="group relative rounded-md bg-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-150 cursor-pointer overflow-hidden"
       onClick={onClick}
     >
-      {/* Preview thumbnail */}
+      {/* Favorite star */}
+      {onToggleFavorite && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+          className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${
+            isFavorite ? "bg-amber-100/90 text-amber-500" : "bg-background/80 text-muted-foreground hover:text-amber-500"
+          }`}
+          title={isFavorite ? "Remove favorite" : "Add to favorites"}
+        >
+          <Star className="w-4 h-4" fill={isFavorite ? "currentColor" : "none"} />
+        </button>
+      )}
+
       {hasVisual && (
         <div className="aspect-[16/9] bg-muted overflow-hidden">
           {exercise.previewImageUrl ? (
@@ -82,7 +96,7 @@ export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName }:
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-2">
           {exercise.description}
         </p>
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex flex-wrap gap-1 mt-2 items-center">
           {exercise.ageGroups.slice(0, 3).map((ag) => (
             <span key={ag} className="text-[11px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
               {ag}

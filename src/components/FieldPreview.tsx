@@ -3,6 +3,7 @@ import { FieldDiagram, FieldElement } from "@/hooks/useCustomExercises";
 interface FieldPreviewProps {
   diagram: FieldDiagram;
   className?: string;
+  stepIndex?: number; // optional: render specific step
 }
 
 function renderElement(el: FieldElement, scale: number = 1) {
@@ -13,12 +14,7 @@ function renderElement(el: FieldElement, scale: number = 1) {
     case "cone":
       return (
         <g key={el.id} transform={`translate(${x}, ${y})`}>
-          <polygon
-            points="0,-10 7,6 -7,6"
-            fill={el.color || "#f97316"}
-            stroke="#fff"
-            strokeWidth="1"
-          />
+          <polygon points="0,-10 7,6 -7,6" fill={el.color || "#f97316"} stroke="#fff" strokeWidth="1" />
         </g>
       );
     case "player":
@@ -26,9 +22,7 @@ function renderElement(el: FieldElement, scale: number = 1) {
         <g key={el.id} transform={`translate(${x}, ${y})`}>
           <circle r="10" fill={el.color || "#3b82f6"} stroke="#fff" strokeWidth="1.5" />
           {el.label && (
-            <text y="4" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">
-              {el.label}
-            </text>
+            <text y="4" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">{el.label}</text>
           )}
         </g>
       );
@@ -59,10 +53,8 @@ function renderElement(el: FieldElement, scale: number = 1) {
           </defs>
           <line
             x1={x} y1={y} x2={endX} y2={endY}
-            stroke={el.color || "#fff"}
-            strokeWidth="2"
-            strokeDasharray={dasharray}
-            markerEnd={`url(#arrowhead-${el.id})`}
+            stroke={el.color || "#fff"} strokeWidth="2"
+            strokeDasharray={dasharray} markerEnd={`url(#arrowhead-${el.id})`}
           />
         </g>
       );
@@ -73,15 +65,10 @@ function renderElement(el: FieldElement, scale: number = 1) {
       return (
         <rect
           key={el.id}
-          x={x - w / 2}
-          y={y - h / 2}
-          width={w}
-          height={h}
+          x={x - w / 2} y={y - h / 2} width={w} height={h}
           fill={el.color || "rgba(59,130,246,0.15)"}
           stroke={el.color || "rgba(59,130,246,0.4)"}
-          strokeWidth="1.5"
-          strokeDasharray="4,3"
-          rx="2"
+          strokeWidth="1.5" strokeDasharray="4,3" rx="2"
         />
       );
     }
@@ -90,20 +77,27 @@ function renderElement(el: FieldElement, scale: number = 1) {
   }
 }
 
-export function FieldPreview({ diagram, className = "" }: FieldPreviewProps) {
+export function FieldPreview({ diagram, className = "", stepIndex = 0 }: FieldPreviewProps) {
+  // Resolve which elements/positions to render based on steps if any
+  const baseElements = diagram.elements ?? [];
+  const steps = diagram.steps ?? [];
+  let elements = baseElements;
+
+  if (steps.length > 0) {
+    const idx = Math.min(stepIndex, steps.length - 1);
+    const overrides = steps[idx]?.elementOverrides ?? {};
+    elements = baseElements.map((el) => overrides[el.id] ? { ...el, ...overrides[el.id] } : el);
+  }
+
   return (
     <svg viewBox="0 0 400 300" className={className} style={{ background: "#2d6a30" }}>
-      {/* Field markings */}
       <rect x="10" y="10" width="380" height="280" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
       <line x1="200" y1="10" x2="200" y2="290" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
       <circle cx="200" cy="150" r="40" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
       <circle cx="200" cy="150" r="3" fill="rgba(255,255,255,0.3)" />
-      {/* Penalty areas */}
       <rect x="10" y="90" width="60" height="120" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
       <rect x="330" y="90" width="60" height="120" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-
-      {/* Elements */}
-      {diagram.elements.map((el) => renderElement(el, 1))}
+      {elements.map((el) => renderElement(el, 1))}
     </svg>
   );
 }

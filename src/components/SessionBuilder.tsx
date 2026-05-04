@@ -1,38 +1,64 @@
-import { useSessionStore } from "@/store/sessionStore";
-import { GripVertical, X, MessageSquare, Save, Play, Trash2 } from "lucide-react";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useState } from "react";
+import { useSessionStore } from "@/store/sessionStore";
+import { useSaveSession } from "@/hooks/useTrainingSessions";
+import { useSaveTemplate } from "@/hooks/useTemplates";
+import { GripVertical, X, MessageSquare, Save, Trash2, BookmarkPlus } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { AgeGroup } from "@/data/exercises";
+import { toast } from "sonner";
 
 const ageGroups: AgeGroup[] = ["U6", "U8", "U10", "U12", "U14", "U16", "U18", "Senior"];
 
 export function SessionBuilder() {
   const {
-    currentExercises, sessionName, sessionDate, sessionAgeGroup,
+    currentExercises, sessionName, sessionDate, sessionAgeGroup, editingSessionId,
     setSessionName, setSessionDate, setSessionAgeGroup,
-    removeExercise, updateNotes, reorderExercises, saveSession, clearCurrentSession,
+    removeExercise, updateNotes, reorderExercises, clearCurrentSession,
   } = useSessionStore();
 
+  const saveSession = useSaveSession();
+  const saveTemplate = useSaveTemplate();
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
 
   const totalDuration = currentExercises.reduce((sum, e) => sum + e.exercise.duration, 0);
 
   const handleReorder = (newOrder: typeof currentExercises) => {
-    // Find what moved
     const newIds = newOrder.map(e => e.id);
     const oldIds = currentExercises.map(e => e.id);
     for (let i = 0; i < newIds.length; i++) {
       if (newIds[i] !== oldIds[i]) {
-        const fromIndex = oldIds.indexOf(newIds[i]);
-        reorderExercises(fromIndex, i);
+        reorderExercises(oldIds.indexOf(newIds[i]), i);
         break;
       }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!sessionName.trim()) return;
-    saveSession();
+    try {
+      await saveSession.mutateAsync({
+        id: editingSessionId ?? undefined,
+        name: sessionName.trim(),
+        date: sessionDate,
+        ageGroup: sessionAgeGroup,
+        exercises: currentExercises,
+      });
+      toast.success(editingSessionId ? "Session updated" : "Session saved");
+      clearCurrentSession();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save");
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    const name = sessionName.trim() || prompt("Template name?")?.trim();
+    if (!name) return;
+    try {
+      await saveTemplate.mutateAsync({ name, exercises: currentExercises });
+      toast.success("Template saved");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save template");
+    }
   };
 
   return (
@@ -91,22 +117,11 @@ export function SessionBuilder() {
           </div>
         ) : (
           <div className="relative">
-            {/* Timeline rail */}
             <div className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-primary rounded-full" />
-
-            <Reorder.Group
-              axis="y"
-              values={currentExercises}
-              onReorder={handleReorder}
-              className="space-y-2"
-            >
+            <Reorder.Group axis="y" values={currentExercises} onReorder={handleReorder} className="space-y-2">
               <AnimatePresence>
-                {currentExercises.map((item, index) => (
-                  <Reorder.Item
-                    key={item.id}
-                    value={item}
-                    className="relative"
-                  >
+                {currentExercises.map((item) => (
+                  <Reorder.Item key={item.id} value={item} className="relative">
                     <motion.div
                       layout
                       initial={{ opacity: 0, x: 20 }}
@@ -115,9 +130,7 @@ export function SessionBuilder() {
                       transition={{ type: "tween", ease: [0.2, 0, 0, 1], duration: 0.2 }}
                       className="flex items-start gap-2 bg-card rounded-md shadow-card p-3 ml-6 cursor-grab active:cursor-grabbing hover:shadow-card-hover transition-shadow"
                     >
-                      {/* Timeline dot */}
                       <div className="absolute left-0 top-5 w-[10px] h-[10px] rounded-full bg-primary border-2 border-background" />
-
                       <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
@@ -177,11 +190,19 @@ export function SessionBuilder() {
         <div className="p-4 border-t border-border space-y-2">
           <button
             onClick={handleSave}
-            disabled={!sessionName.trim()}
+            disabled={!sessionName.trim() || saveSession.isPending}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
-            Save Session
+            {editingSessionId ? "Update Session" : "Save Session"}
+          </button>
+          <button
+            onClick={handleSaveAsTemplate}
+            disabled={saveTemplate.isPending}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-sm bg-muted text-foreground text-sm hover:bg-muted/70 transition-colors disabled:opacity-40"
+          >
+            <BookmarkPlus className="w-3.5 h-3.5" />
+            Save as Template
           </button>
           <button
             onClick={clearCurrentSession}

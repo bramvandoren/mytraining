@@ -19,9 +19,18 @@ export interface FieldElement {
   arrowStyle?: "solid" | "dashed" | "wavy";
 }
 
+export interface FieldStep {
+  id: string;
+  label?: string;
+  durationMs?: number;
+  // partial overrides keyed by element id (e.g. new x/y or arrow endpoints)
+  elementOverrides: Record<string, Partial<FieldElement>>;
+}
+
 export interface FieldDiagram {
   elements: FieldElement[];
   fieldType: "full" | "half" | "quarter";
+  steps?: FieldStep[];
 }
 
 export interface CustomExerciseRow {
