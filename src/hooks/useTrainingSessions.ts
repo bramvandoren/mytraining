@@ -6,6 +6,9 @@ import { useAuth } from "./useAuth";
 export interface CloudSession extends TrainingSession {
   user_id: string;
   total_duration: number;
+  club_id: string | null;
+  share_token: string | null;
+  is_shared: boolean;
 }
 
 export function useTrainingSessions() {
@@ -26,6 +29,9 @@ export function useTrainingSessions() {
         createdAt: r.created_at,
         user_id: r.user_id,
         total_duration: r.total_duration,
+        club_id: r.club_id ?? null,
+        share_token: r.share_token ?? null,
+        is_shared: !!r.is_shared,
       }));
     },
   });
@@ -35,16 +41,17 @@ export function useSaveSession() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (s: { id?: string; name: string; date: string; ageGroup: AgeGroup; exercises: SessionExercise[] }) => {
+    mutationFn: async (s: { id?: string; name: string; date: string; ageGroup: AgeGroup; exercises: SessionExercise[]; club_id?: string | null }) => {
       if (!user) throw new Error("Not authenticated");
       const total = s.exercises.reduce((sum, e) => sum + e.exercise.duration, 0);
-      const payload = {
+      const payload: any = {
         user_id: user.id,
         name: s.name,
         date: s.date,
         age_group: s.ageGroup,
         exercises: s.exercises as any,
         total_duration: total,
+        club_id: s.club_id ?? null,
       };
       if (s.id) {
         const { error } = await supabase.from("training_sessions").update(payload).eq("id", s.id);

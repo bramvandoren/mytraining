@@ -1,21 +1,21 @@
-import { AgeGroup, ExerciseType, SkillLevel } from "@/data/exercises";
+import { AgeGroup, SkillLevel } from "@/data/exercises";
 import { Search, X, Star } from "lucide-react";
+import { useTags } from "@/hooks/useTags";
 
 interface FiltersProps {
   search: string;
   onSearchChange: (v: string) => void;
   ageGroup: AgeGroup | "";
   onAgeGroupChange: (v: AgeGroup | "") => void;
-  type: ExerciseType | "";
-  onTypeChange: (v: ExerciseType | "") => void;
   skillLevel: SkillLevel | "";
   onSkillLevelChange: (v: SkillLevel | "") => void;
+  selectedTagIds: string[];
+  onToggleTag: (id: string) => void;
   favoritesOnly?: boolean;
   onFavoritesToggle?: () => void;
 }
 
 const ageGroups: AgeGroup[] = ["U6", "U8", "U10", "U12", "U14", "U16", "U18", "Senior"];
-const types: ExerciseType[] = ["warm-up", "technique", "passing", "finishing", "game-form", "fitness", "cool-down"];
 const skills: SkillLevel[] = ["beginner", "intermediate", "advanced"];
 
 function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -34,11 +34,12 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
 export function ExerciseFilters({
   search, onSearchChange,
   ageGroup, onAgeGroupChange,
-  type, onTypeChange,
   skillLevel, onSkillLevelChange,
+  selectedTagIds, onToggleTag,
   favoritesOnly, onFavoritesToggle,
 }: FiltersProps) {
-  const hasFilters = ageGroup || type || skillLevel || favoritesOnly;
+  const { data: tags = [] } = useTags();
+  const hasFilters = ageGroup || skillLevel || favoritesOnly || selectedTagIds.length > 0;
 
   return (
     <div className="space-y-3">
@@ -46,11 +47,9 @@ export function ExerciseFilters({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
-            type="text"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            type="text" value={search} onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search exercises..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground transition-all"
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
           />
           {search && (
             <button onClick={() => onSearchChange("")} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -59,13 +58,10 @@ export function ExerciseFilters({
           )}
         </div>
         {onFavoritesToggle && (
-          <button
-            onClick={onFavoritesToggle}
-            title="Show only favorites"
+          <button onClick={onFavoritesToggle} title="Show only favorites"
             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
               favoritesOnly ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
+            }`}>
             <Star className="w-4 h-4" fill={favoritesOnly ? "currentColor" : "none"} />
             <span className="hidden sm:inline">Favorites</span>
           </button>
@@ -79,8 +75,8 @@ export function ExerciseFilters({
           ))}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {types.map((t) => (
-            <FilterPill key={t} label={t} active={type === t} onClick={() => onTypeChange(type === t ? "" : t)} />
+          {tags.map((t) => (
+            <FilterPill key={t.id} label={t.name} active={selectedTagIds.includes(t.id)} onClick={() => onToggleTag(t.id)} />
           ))}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -94,8 +90,8 @@ export function ExerciseFilters({
         <button
           onClick={() => {
             onAgeGroupChange("");
-            onTypeChange("");
             onSkillLevelChange("");
+            selectedTagIds.forEach(onToggleTag);
             if (favoritesOnly && onFavoritesToggle) onFavoritesToggle();
           }}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"

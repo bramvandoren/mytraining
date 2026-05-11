@@ -49,11 +49,24 @@ export interface CustomExerciseRow {
   video_url: string | null;
   is_predefined: boolean;
   user_id: string | null;
+  club_id: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export function customExerciseToExercise(row: CustomExerciseRow): Exercise & { isCustom: true; customId: string; fieldDiagram: FieldDiagram | null; previewImageUrl: string | null; videoUrl: string | null; userId: string | null } {
+export type ExerciseWithMeta = Exercise & {
+  isCustom: true;
+  customId: string;
+  fieldDiagram: FieldDiagram | null;
+  previewImageUrl: string | null;
+  videoUrl: string | null;
+  userId: string | null;
+  clubId: string | null;
+  isPublic: boolean;
+};
+
+export function customExerciseToExercise(row: CustomExerciseRow): ExerciseWithMeta {
   return {
     id: `custom-${row.id}`,
     customId: row.id,
@@ -71,6 +84,8 @@ export function customExerciseToExercise(row: CustomExerciseRow): Exercise & { i
     previewImageUrl: row.preview_image_url,
     videoUrl: row.video_url,
     userId: row.user_id,
+    clubId: row.club_id,
+    isPublic: row.is_public,
   };
 }
 
@@ -105,6 +120,8 @@ export function useCreateExercise() {
       field_diagram?: FieldDiagram;
       preview_image_url?: string;
       video_url?: string;
+      club_id?: string | null;
+      is_public?: boolean;
     }) => {
       const { data, error } = await supabase
         .from("custom_exercises")
@@ -122,7 +139,9 @@ export function useCreateExercise() {
           preview_image_url: exercise.preview_image_url ?? null,
           video_url: exercise.video_url ?? null,
           user_id: user?.id,
-        })
+          club_id: exercise.club_id ?? null,
+          is_public: exercise.is_public ?? false,
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -149,6 +168,8 @@ export function useUpdateExercise() {
       field_diagram?: FieldDiagram;
       preview_image_url?: string;
       video_url?: string;
+      club_id?: string | null;
+      is_public?: boolean;
     }) => {
       const { data, error } = await supabase
         .from("custom_exercises")

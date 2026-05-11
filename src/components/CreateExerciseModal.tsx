@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { X, Upload, Image, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Upload, Image, Video, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FieldEditor } from "./FieldEditor";
 import { FieldDiagram, useCreateExercise, useUpdateExercise, uploadExerciseMedia } from "@/hooks/useCustomExercises";
 import { AgeGroup, ExerciseType, SkillLevel, FieldSize } from "@/data/exercises";
+import { useTags, useExerciseTagMap, useSetExerciseTags } from "@/hooks/useTags";
+import { useActiveClub } from "@/hooks/useClubs";
 import { toast } from "sonner";
 
 const ageGroups: AgeGroup[] = ["U6", "U8", "U10", "U12", "U14", "U16", "U18", "Senior"];
@@ -48,6 +50,20 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
   const [videoUrl, setVideoUrl] = useState(editExercise?.videoUrl || "");
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "field" | "media">("details");
+  const [shareWithClub, setShareWithClub] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  const { data: tags = [] } = useTags();
+  const { data: tagMap = {} } = useExerciseTagMap();
+  const setExerciseTags = useSetExerciseTags();
+  const { active: activeClub } = useActiveClub();
+
+  useEffect(() => {
+    if (editExercise?.customId && tagMap[editExercise.customId]) {
+      setSelectedTagIds(tagMap[editExercise.customId]);
+    }
+  }, [editExercise?.customId, tagMap]);
 
   const createExercise = useCreateExercise();
   const updateExercise = useUpdateExercise();
@@ -109,15 +125,22 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
       field_diagram: diagram.elements.length > 0 ? diagram : undefined,
       preview_image_url: previewImageUrl || undefined,
       video_url: videoUrl || undefined,
+      club_id: shareWithClub && activeClub && !activeClub.is_personal ? activeClub.id : null,
+      is_public: isPublic,
     };
 
     try {
+      let exerciseId = editExercise?.customId;
       if (editExercise?.customId) {
         await updateExercise.mutateAsync({ id: editExercise.customId, ...payload });
         toast.success("Exercise updated");
       } else {
-        await createExercise.mutateAsync(payload);
+        const created: any = await createExercise.mutateAsync(payload);
+        exerciseId = created?.id;
         toast.success("Exercise created");
+      }
+      if (exerciseId) {
+        await setExerciseTags.mutateAsync({ exerciseId, tagIds: selectedTagIds });
       }
       onClose();
     } catch (err) {
@@ -294,6 +317,38 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">Tags</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTagIds((ids) => ids.includes(t.id) ? ids.filter((x) => x !== t.id) : [...ids, t.id])}
+                      className={`text-xs px-2.5 py-1.5 rounded-sm transition-all ${
+                        selectedTagIds.includes(t.id) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sharing */}
+              <div className="space-y-2 pt-3 border-t border-border">
+                {activeClub && !activeClub.is_personal && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={shareWithClub} onChange={(e) => setShareWithClub(e.target.checked)} />
+                    Share with club: <span className="font-medium">{activeClub.name}</span>
+                  </label>
+                )}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+                  <Globe className="w-3.5 h-3.5" /> Publish to community marketplace
+                </label>
               </div>
             </div>
           )}

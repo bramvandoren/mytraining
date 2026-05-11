@@ -1,13 +1,16 @@
 import { useSessionStore } from "@/store/sessionStore";
 import { useTrainingSessions, useDeleteSession } from "@/hooks/useTrainingSessions";
+import { useEnableShare } from "@/hooks/useShareSession";
 import { useProfiles } from "@/hooks/useProfiles";
-import { Play, Trash2, Clock, Users, Calendar, Edit3, User } from "lucide-react";
+import { Play, Trash2, Clock, Users, Calendar, Edit3, User, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export function SavedSessions() {
   const { startMatchday, loadSession } = useSessionStore();
   const { data: sessions = [], isLoading } = useTrainingSessions();
   const deleteSession = useDeleteSession();
+  const enableShare = useEnableShare();
 
   const creatorIds = [...new Set(sessions.map((s) => s.user_id))];
   const { data: profiles = {} } = useProfiles(creatorIds);
@@ -89,6 +92,21 @@ export function SavedSessions() {
               >
                 <Edit3 className="w-3 h-3" />
                 Edit
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const token = session.share_token ?? await enableShare.mutateAsync(session.id);
+                    const url = `${window.location.origin}/share/${token}`;
+                    await navigator.clipboard.writeText(url);
+                    toast.success("Share link copied to clipboard");
+                  } catch (e: any) { toast.error(e.message ?? "Share failed"); }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-muted text-muted-foreground text-xs font-medium hover:text-foreground transition-colors"
+                title="Copy public share link"
+              >
+                <Share2 className="w-3 h-3" />
+                Share
               </button>
               <button
                 onClick={() => deleteSession.mutate(session.id)}

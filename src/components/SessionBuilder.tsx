@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useSessionStore } from "@/store/sessionStore";
 import { useSaveSession } from "@/hooks/useTrainingSessions";
 import { useSaveTemplate } from "@/hooks/useTemplates";
-import { GripVertical, X, MessageSquare, Save, Trash2, BookmarkPlus } from "lucide-react";
+import { useActiveClub } from "@/hooks/useClubs";
+import { TrainingAnalysis } from "./TrainingAnalysis";
+import { GripVertical, X, MessageSquare, Save, Trash2, BookmarkPlus, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { AgeGroup } from "@/data/exercises";
 import { toast } from "sonner";
@@ -18,7 +20,10 @@ export function SessionBuilder() {
 
   const saveSession = useSaveSession();
   const saveTemplate = useSaveTemplate();
+  const { active: activeClub } = useActiveClub();
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+  const [shareWithClub, setShareWithClub] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const totalDuration = currentExercises.reduce((sum, e) => sum + e.exercise.duration, 0);
 
@@ -42,6 +47,7 @@ export function SessionBuilder() {
         date: sessionDate,
         ageGroup: sessionAgeGroup,
         exercises: currentExercises,
+        club_id: shareWithClub && activeClub && !activeClub.is_personal ? activeClub.id : null,
       });
       toast.success(editingSessionId ? "Session updated" : "Session saved");
       clearCurrentSession();
@@ -54,7 +60,11 @@ export function SessionBuilder() {
     const name = sessionName.trim() || prompt("Template name?")?.trim();
     if (!name) return;
     try {
-      await saveTemplate.mutateAsync({ name, exercises: currentExercises });
+      await saveTemplate.mutateAsync({
+        name,
+        exercises: currentExercises,
+        club_id: shareWithClub && activeClub && !activeClub.is_personal ? activeClub.id : null,
+      });
       toast.success("Template saved");
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save template");
@@ -188,6 +198,24 @@ export function SessionBuilder() {
 
       {currentExercises.length > 0 && (
         <div className="p-4 border-t border-border space-y-2">
+          <button
+            onClick={() => setShowAnalysis((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm bg-muted/50 text-foreground text-xs hover:bg-muted transition-colors"
+          >
+            <span className="flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Training Analysis</span>
+            <span className="text-muted-foreground">{showAnalysis ? "Hide" : "Show"}</span>
+          </button>
+          {showAnalysis && (
+            <div className="bg-card rounded-sm p-3">
+              <TrainingAnalysis exercises={currentExercises} />
+            </div>
+          )}
+          {activeClub && !activeClub.is_personal && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer p-2 rounded-sm hover:bg-muted">
+              <input type="checkbox" checked={shareWithClub} onChange={(e) => setShareWithClub(e.target.checked)} />
+              Share with club: {activeClub.name}
+            </label>
+          )}
           <button
             onClick={handleSave}
             disabled={!sessionName.trim() || saveSession.isPending}

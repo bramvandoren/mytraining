@@ -37,7 +37,7 @@ export function useSaveTemplate() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (t: { name: string; exercises: SessionExercise[] }) => {
+    mutationFn: async (t: { name: string; exercises: SessionExercise[]; club_id?: string | null }) => {
       if (!user) throw new Error("Not authenticated");
       const total = t.exercises.reduce((s, e) => s + e.exercise.duration, 0);
       const { error } = await supabase.from("training_templates").insert({
@@ -45,7 +45,8 @@ export function useSaveTemplate() {
         name: t.name,
         exercises: t.exercises as any,
         total_duration: total,
-      });
+        club_id: t.club_id ?? null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["training_templates"] }),
