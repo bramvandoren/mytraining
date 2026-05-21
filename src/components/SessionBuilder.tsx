@@ -4,6 +4,7 @@ import { useSaveSession } from "@/hooks/useTrainingSessions";
 import { useSaveTemplate } from "@/hooks/useTemplates";
 import { useActiveClub } from "@/hooks/useClubs";
 import { TrainingAnalysis } from "./TrainingAnalysis";
+import { SaveStatus } from "./SaveStatus";
 import { GripVertical, X, MessageSquare, Save, Trash2, BookmarkPlus, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { AgeGroup } from "@/data/exercises";
@@ -49,7 +50,7 @@ export function SessionBuilder() {
         exercises: currentExercises,
         club_id: shareWithClub && activeClub && !activeClub.is_personal ? activeClub.id : null,
       });
-      toast.success(editingSessionId ? "Session updated" : "Session saved");
+      toast.success(editingSessionId ? "Training updated" : "Training saved");
       clearCurrentSession();
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
@@ -74,7 +75,10 @@ export function SessionBuilder() {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-border">
-        <h2 className="font-semibold text-foreground tracking-tight text-lg">Session Builder</h2>
+        <h2 className="font-semibold text-foreground tracking-tight text-lg flex items-center gap-2">
+          Training Builder
+          {currentExercises.length > 0 && <SaveStatus status="saved" />}
+        </h2>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm font-mono text-muted-foreground tabular-nums">
             {currentExercises.length} Drills
@@ -91,9 +95,10 @@ export function SessionBuilder() {
           type="text"
           value={sessionName}
           onChange={(e) => setSessionName(e.target.value)}
-          placeholder="Session name..."
+          placeholder="Training name..."
           className="w-full px-3 py-2 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
         />
+
         <div className="flex gap-2">
           <input
             type="date"
@@ -222,7 +227,7 @@ export function SessionBuilder() {
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
-            {editingSessionId ? "Update Session" : "Save Session"}
+            {editingSessionId ? "Update Training" : "Save Training"}
           </button>
           <button
             onClick={handleSaveAsTemplate}

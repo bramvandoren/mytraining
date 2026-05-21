@@ -1,7 +1,9 @@
+import { memo } from "react";
 import { Exercise } from "@/data/exercises";
 import { Plus, Check, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { FieldPreview } from "./FieldPreview";
+import { LazyImage } from "./LazyImage";
 import { FieldDiagram } from "@/hooks/useCustomExercises";
 
 interface ExerciseCardProps {
@@ -24,7 +26,7 @@ const typeColors: Record<string, string> = {
   "cool-down": "bg-sky-100 text-sky-700",
 };
 
-export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName, isFavorite, onToggleFavorite }: ExerciseCardProps) {
+function ExerciseCardImpl({ exercise, onAdd, isAdded, onClick, creatorName, isFavorite, onToggleFavorite }: ExerciseCardProps) {
   const hasVisual = exercise.previewImageUrl || exercise.fieldDiagram;
 
   return (
@@ -53,7 +55,7 @@ export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName, i
       {hasVisual && (
         <div className="aspect-[16/9] bg-muted overflow-hidden">
           {exercise.previewImageUrl ? (
-            <img src={exercise.previewImageUrl} alt={exercise.title} className="w-full h-full object-cover" />
+            <LazyImage src={exercise.previewImageUrl} alt={exercise.title} className="w-full h-full" />
           ) : exercise.fieldDiagram ? (
             <FieldPreview diagram={exercise.fieldDiagram} className="w-full h-full" />
           ) : null}
@@ -125,3 +127,6 @@ export function ExerciseCard({ exercise, onAdd, isAdded, onClick, creatorName, i
     </motion.div>
   );
 }
+
+export const ExerciseCard = memo(ExerciseCardImpl);
+

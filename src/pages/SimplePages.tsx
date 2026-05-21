@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/PageShell";
 import { SavedSessions } from "@/components/SavedSessions";
 import { Templates } from "@/components/Templates";
@@ -7,20 +8,26 @@ import { Marketplace } from "@/components/Marketplace";
 import { ClubManager } from "@/components/ClubManager";
 
 export function SessionsPage() {
-  return <PageShell title="Sessions" subtitle="Your saved trainings"><SavedSessions /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("trainings.title")} subtitle={t("trainings.subtitle")}><SavedSessions /></PageShell>;
 }
 export function TemplatesPage() {
-  return <PageShell title="Templates" subtitle="Reusable training plans"><Templates /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("nav.templates")} subtitle={t("dashboard.openTemplatesDesc")}><Templates /></PageShell>;
 }
 export function CalendarPage() {
-  return <PageShell title="Calendar" subtitle="Schedule and plan trainings"><Calendar /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("nav.calendar")} subtitle=""><Calendar /></PageShell>;
 }
 export function SeasonPage() {
-  return <PageShell title="Season planner" subtitle="Long-term goals and weekly plans"><SeasonPlanner /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("nav.season")} subtitle=""><SeasonPlanner /></PageShell>;
 }
 export function CommunityPage() {
-  return <PageShell title="Community" subtitle="Public exercises shared by other coaches"><Marketplace /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("nav.community")} subtitle=""><Marketplace /></PageShell>;
 }
 export function ClubPage() {
-  return <PageShell title="Club" subtitle="Manage your club and members"><ClubManager /></PageShell>;
+  const { t } = useTranslation();
+  return <PageShell title={t("nav.club")} subtitle=""><ClubManager /></PageShell>;
 }

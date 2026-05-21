@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Dashboard from "./pages/Dashboard.tsx";
 import LibraryPage from "./pages/LibraryPage.tsx";
 import { SessionsPage, TemplatesPage, CalendarPage, SeasonPage, CommunityPage, ClubPage } from "./pages/SimplePages.tsx";
@@ -28,7 +29,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <ErrorBoundary>
+          <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -37,7 +39,8 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/favorites" element={<LibraryPage defaultFavoritesOnly />} />
-              <Route path="/sessions" element={<SessionsPage />} />
+              <Route path="/trainings" element={<SessionsPage />} />
+              <Route path="/sessions" element={<Navigate to="/trainings" replace />} />
               <Route path="/templates" element={<TemplatesPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/season" element={<SeasonPage />} />
@@ -47,7 +50,8 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+          </BrowserRouter>
+        </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

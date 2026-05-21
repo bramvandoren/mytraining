@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { X, Upload, Image, Video, Globe } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FieldEditor } from "./FieldEditor";
-import { FieldDiagram, useCreateExercise, useUpdateExercise, uploadExerciseMedia } from "@/hooks/useCustomExercises";
+import { FieldDiagram, useCreateExercise, useUpdateExercise } from "@/hooks/useCustomExercises";
+import { uploadExerciseMediaSafe, MediaError } from "@/lib/mediaUpload";
 import { AgeGroup, ExerciseType, SkillLevel, FieldSize } from "@/data/exercises";
 import { useTags, useExerciseTagMap, useSetExerciseTags } from "@/hooks/useTags";
 import { useActiveClub } from "@/hooks/useClubs";
+import { useLocalDraft, loadDraft, clearDraft } from "@/hooks/useLocalDraft";
+import { SaveStatus } from "./SaveStatus";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 const ageGroups: AgeGroup[] = ["U6", "U8", "U10", "U12", "U14", "U16", "U18", "Senior"];
@@ -33,31 +37,54 @@ interface CreateExerciseModalProps {
   } | null;
 }
 
+type DraftShape = {
+  title: string; description: string; players: number; duration: number;
+  selectedAgeGroups: AgeGroup[]; skillLevel: SkillLevel; exerciseType: ExerciseType;
+  fieldSize: FieldSize; icon: string; diagram: FieldDiagram;
+  previewImageUrl: string; videoUrl: string; selectedTagIds: string[];
+};
+
 export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseModalProps) {
-  const [title, setTitle] = useState(editExercise?.title || "");
-  const [description, setDescription] = useState(editExercise?.description || "");
-  const [players, setPlayers] = useState(editExercise?.players || 6);
-  const [duration, setDuration] = useState(editExercise?.duration || 10);
-  const [selectedAgeGroups, setSelectedAgeGroups] = useState<AgeGroup[]>(editExercise?.ageGroups || ["U12"]);
-  const [skillLevel, setSkillLevel] = useState<SkillLevel>(editExercise?.skillLevel || "beginner");
-  const [exerciseType, setExerciseType] = useState<ExerciseType>(editExercise?.type || "technique");
-  const [fieldSize, setFieldSize] = useState<FieldSize>(editExercise?.fieldSize || "medium");
-  const [icon, setIcon] = useState(editExercise?.icon || "⚽");
+  const { t } = useTranslation();
+  const draftKey = `exercise:${editExercise?.customId ?? "new"}`;
+  const initial = (() => {
+    // Only restore draft when CREATING; for edits, take server values as truth.
+    if (!editExercise) return loadDraft<DraftShape>(draftKey);
+    return null;
+  })();
+
+  const [title, setTitle] = useState(editExercise?.title ?? initial?.title ?? "");
+  const [description, setDescription] = useState(editExercise?.description ?? initial?.description ?? "");
+  const [players, setPlayers] = useState(editExercise?.players ?? initial?.players ?? 6);
+  const [duration, setDuration] = useState(editExercise?.duration ?? initial?.duration ?? 10);
+  const [selectedAgeGroups, setSelectedAgeGroups] = useState<AgeGroup[]>(editExercise?.ageGroups ?? initial?.selectedAgeGroups ?? ["U12"]);
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>(editExercise?.skillLevel ?? initial?.skillLevel ?? "beginner");
+  const [exerciseType, setExerciseType] = useState<ExerciseType>(editExercise?.type ?? initial?.exerciseType ?? "technique");
+  const [fieldSize, setFieldSize] = useState<FieldSize>(editExercise?.fieldSize ?? initial?.fieldSize ?? "medium");
+  const [icon, setIcon] = useState(editExercise?.icon ?? initial?.icon ?? "⚽");
   const [diagram, setDiagram] = useState<FieldDiagram>(
-    editExercise?.fieldDiagram || { elements: [], fieldType: "full" }
+    editExercise?.fieldDiagram || initial?.diagram || { elements: [], fieldType: "full" },
   );
-  const [previewImageUrl, setPreviewImageUrl] = useState(editExercise?.previewImageUrl || "");
-  const [videoUrl, setVideoUrl] = useState(editExercise?.videoUrl || "");
+  const [previewImageUrl, setPreviewImageUrl] = useState(editExercise?.previewImageUrl ?? initial?.previewImageUrl ?? "");
+  const [videoUrl, setVideoUrl] = useState(editExercise?.videoUrl ?? initial?.videoUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "field" | "media">("details");
   const [shareWithClub, setShareWithClub] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initial?.selectedTagIds ?? []);
+  const [submitted, setSubmitted] = useState(false);
 
   const { data: tags = [] } = useTags();
   const { data: tagMap = {} } = useExerciseTagMap();
   const setExerciseTags = useSetExerciseTags();
   const { active: activeClub } = useActiveClub();
+
+  // Persist draft for new exercises so refresh doesn't lose work
+  const draftValue: DraftShape = {
+    title, description, players, duration, selectedAgeGroups, skillLevel,
+    exerciseType, fieldSize, icon, diagram, previewImageUrl, videoUrl, selectedTagIds,
+  };
+  const draftStatus = useLocalDraft(draftKey, draftValue, !editExercise && !submitted);
 
   useEffect(() => {
     if (editExercise?.customId && tagMap[editExercise.customId]) {
@@ -79,36 +106,36 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
     if (!file) return;
     setUploading(true);
     try {
-      const url = await uploadExerciseMedia(file, editExercise?.customId || "new");
+      const url = await uploadExerciseMediaSafe(file, editExercise?.customId || "new", "image");
       setPreviewImageUrl(url);
-      toast.success("Image uploaded");
+      toast.success(t("exercise.imageUploaded"));
     } catch (err) {
-      toast.error("Upload failed");
+      toast.error(err instanceof MediaError ? err.message : t("exercise.uploadFailed"));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
-    setUploading(false);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Video must be under 50MB");
-      return;
-    }
     setUploading(true);
     try {
-      const url = await uploadExerciseMedia(file, editExercise?.customId || "new");
+      const url = await uploadExerciseMediaSafe(file, editExercise?.customId || "new", "video");
       setVideoUrl(url);
-      toast.success("Video uploaded");
+      toast.success(t("exercise.videoUploaded"));
     } catch (err) {
-      toast.error("Upload failed");
+      toast.error(err instanceof MediaError ? err.message : t("exercise.uploadFailed"));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
-    setUploading(false);
   };
 
   const handleSave = async () => {
     if (!title.trim()) {
-      toast.error("Title is required");
+      toast.error(t("exercise.titleRequired"));
       return;
     }
 
@@ -133,18 +160,20 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
       let exerciseId = editExercise?.customId;
       if (editExercise?.customId) {
         await updateExercise.mutateAsync({ id: editExercise.customId, ...payload });
-        toast.success("Exercise updated");
+        toast.success(t("exercise.updated"));
       } else {
         const created: any = await createExercise.mutateAsync(payload);
         exerciseId = created?.id;
-        toast.success("Exercise created");
+        toast.success(t("exercise.saved"));
       }
       if (exerciseId) {
         await setExerciseTags.mutateAsync({ exerciseId, tagIds: selectedTagIds });
       }
+      setSubmitted(true);
+      clearDraft(draftKey);
       onClose();
     } catch (err) {
-      toast.error("Failed to save exercise");
+      toast.error(t("exercise.saveFailed"));
     }
   };
 
@@ -168,27 +197,30 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            {editExercise ? "Edit Exercise" : "Create Exercise"}
-          </h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-sm flex items-center justify-center hover:bg-muted transition-colors">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              {editExercise ? t("exercise.edit") : t("exercise.create")}
+            </h2>
+            {!editExercise && <SaveStatus status={draftStatus} />}
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-sm flex items-center justify-center hover:bg-muted transition-colors" aria-label={t("common.close")}>
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-border flex-shrink-0">
-          {(["details", "field", "media"] as const).map((t) => (
+          {(["details", "field", "media"] as const).map((tab) => (
             <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`px-4 py-2.5 text-sm font-medium transition-all capitalize ${
-                activeTab === t
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium transition-all ${
+                activeTab === tab
                   ? "text-foreground border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "field" ? "Field Editor" : t}
+              {t(`exercise.tabs.${tab}`)}
             </button>
           ))}
         </div>
@@ -199,7 +231,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
             <div className="space-y-4">
               {/* Icon */}
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Icon</label>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.icon")}</label>
                 <div className="flex flex-wrap gap-1.5">
                   {iconOptions.map((ic) => (
                     <button
@@ -217,23 +249,23 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
 
               {/* Title */}
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Title *</label>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.title")} *</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Exercise name..."
+                  placeholder={t("exercise.namePlaceholder")}
                   className="w-full px-3 py-2 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Description</label>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.description")}</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe the exercise..."
+                  placeholder={t("exercise.descPlaceholder")}
                   rows={3}
                   className="w-full px-3 py-2 text-sm bg-muted rounded-md border-0 outline-none resize-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
                 />
@@ -242,7 +274,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
               {/* Players & Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Players</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.players")}</label>
                   <input
                     type="number"
                     min={1}
@@ -253,7 +285,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Duration (min)</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.duration")}</label>
                   <input
                     type="number"
                     min={1}
@@ -268,17 +300,17 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
               {/* Type & Skill & Field */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Type</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.type")}</label>
                   <select
                     value={exerciseType}
                     onChange={(e) => setExerciseType(e.target.value as ExerciseType)}
                     className="w-full px-3 py-2 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    {exerciseTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {exerciseTypes.map((x) => <option key={x} value={x}>{x}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Skill</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.skill")}</label>
                   <select
                     value={skillLevel}
                     onChange={(e) => setSkillLevel(e.target.value as SkillLevel)}
@@ -288,7 +320,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 block">Field</label>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.field")}</label>
                   <select
                     value={fieldSize}
                     onChange={(e) => setFieldSize(e.target.value as FieldSize)}
@@ -301,7 +333,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
 
               {/* Age Groups */}
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Age Groups</label>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.ageGroups")}</label>
                 <div className="flex flex-wrap gap-1.5">
                   {ageGroups.map((ag) => (
                     <button
@@ -321,17 +353,17 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
 
               {/* Tags */}
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Tags</label>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{t("exercise.tags")}</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {tags.map((t) => (
+                  {tags.map((tag) => (
                     <button
-                      key={t.id}
-                      onClick={() => setSelectedTagIds((ids) => ids.includes(t.id) ? ids.filter((x) => x !== t.id) : [...ids, t.id])}
+                      key={tag.id}
+                      onClick={() => setSelectedTagIds((ids) => ids.includes(tag.id) ? ids.filter((x) => x !== tag.id) : [...ids, tag.id])}
                       className={`text-xs px-2.5 py-1.5 rounded-sm transition-all ${
-                        selectedTagIds.includes(t.id) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                        selectedTagIds.includes(tag.id) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {t.name}
+                      {tag.name}
                     </button>
                   ))}
                 </div>
@@ -342,12 +374,12 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                 {activeClub && !activeClub.is_personal && (
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="checkbox" checked={shareWithClub} onChange={(e) => setShareWithClub(e.target.checked)} />
-                    Share with club: <span className="font-medium">{activeClub.name}</span>
+                    {t("exercise.shareWithClub")} <span className="font-medium">{activeClub.name}</span>
                   </label>
                 )}
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-                  <Globe className="w-3.5 h-3.5" /> Publish to community marketplace
+                  <Globe className="w-3.5 h-3.5" /> {t("exercise.publishCommunity")}
                 </label>
               </div>
             </div>
@@ -362,7 +394,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
               {/* Image Upload */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-2 block flex items-center gap-1.5">
-                  <Image className="w-3.5 h-3.5" /> Field Diagram Image
+                  <Image className="w-3.5 h-3.5" /> {t("exercise.fieldDiagram")}
                 </label>
                 {previewImageUrl ? (
                   <div className="relative rounded-md overflow-hidden border border-border">
@@ -377,7 +409,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                 ) : (
                   <label className="flex flex-col items-center justify-center h-40 rounded-md border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
                     <Upload className="w-6 h-6 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click to upload image</span>
+                    <span className="text-sm text-muted-foreground">{t("exercise.uploadImage")}</span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
                 )}
@@ -386,7 +418,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
               {/* Video Upload */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-2 block flex items-center gap-1.5">
-                  <Video className="w-3.5 h-3.5" /> Video Demonstration
+                  <Video className="w-3.5 h-3.5" /> {t("exercise.videoUrl")}
                 </label>
                 {videoUrl ? (
                   <div className="relative rounded-md overflow-hidden border border-border">
@@ -401,7 +433,7 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
                 ) : (
                   <label className="flex flex-col items-center justify-center h-40 rounded-md border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer">
                     <Upload className="w-6 h-6 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click to upload video (max 50MB)</span>
+                    <span className="text-sm text-muted-foreground">{t("exercise.uploadVideo")}</span>
                     <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
                   </label>
                 )}
@@ -416,14 +448,14 @@ export function CreateExerciseModal({ onClose, editExercise }: CreateExerciseMod
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving || !title.trim() || uploading}
             className="px-5 py-2 rounded-sm bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isSaving ? "Saving..." : editExercise ? "Update" : "Create Exercise"}
+            {isSaving ? t("exercise.uploading") : editExercise ? t("common.edit") : t("exercise.create")}
           </button>
         </div>
       </motion.div>

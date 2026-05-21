@@ -1,5 +1,6 @@
 import { AgeGroup, SkillLevel } from "@/data/exercises";
 import { Search, X, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTags } from "@/hooks/useTags";
 
 interface FiltersProps {
@@ -38,6 +39,7 @@ export function ExerciseFilters({
   selectedTagIds, onToggleTag,
   favoritesOnly, onFavoritesToggle,
 }: FiltersProps) {
+  const { t } = useTranslation();
   const { data: tags = [] } = useTags();
   const hasFilters = ageGroup || skillLevel || favoritesOnly || selectedTagIds.length > 0;
 
@@ -48,7 +50,7 @@ export function ExerciseFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text" value={search} onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search exercises..."
+            placeholder={t("common.search")}
             className="w-full pl-9 pr-4 py-2.5 text-sm bg-muted rounded-md border-0 outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
           />
           {search && (
@@ -58,12 +60,12 @@ export function ExerciseFilters({
           )}
         </div>
         {onFavoritesToggle && (
-          <button onClick={onFavoritesToggle} title="Show only favorites"
+          <button onClick={onFavoritesToggle} title={t("filters.favorites")}
             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
               favoritesOnly ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}>
             <Star className="w-4 h-4" fill={favoritesOnly ? "currentColor" : "none"} />
-            <span className="hidden sm:inline">Favorites</span>
+            <span className="hidden sm:inline">{t("filters.favorites")}</span>
           </button>
         )}
       </div>
@@ -91,12 +93,13 @@ export function ExerciseFilters({
           onClick={() => {
             onAgeGroupChange("");
             onSkillLevelChange("");
-            selectedTagIds.forEach(onToggleTag);
+            // Clear all selected tags at once (avoid mutating during iteration)
+            [...selectedTagIds].forEach(onToggleTag);
             if (favoritesOnly && onFavoritesToggle) onFavoritesToggle();
           }}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Clear all filters
+          {t("filters.clearAll")}
         </button>
       )}
     </div>
