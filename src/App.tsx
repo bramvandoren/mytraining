@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import AppLayout from "@/components/AppLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Dashboard from "./pages/Dashboard.tsx";
@@ -13,6 +14,7 @@ import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import SharedSession from "./pages/SharedSession.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -25,35 +27,38 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ErrorBoundary>
-          <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/share/:token" element={<SharedSession />} />
-            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/library" element={<LibraryPage />} />
-              <Route path="/favorites" element={<LibraryPage defaultFavoritesOnly />} />
-              <Route path="/trainings" element={<SessionsPage />} />
-              <Route path="/sessions" element={<Navigate to="/trainings" replace />} />
-              <Route path="/templates" element={<TemplatesPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/season" element={<SeasonPage />} />
-              <Route path="/community" element={<CommunityPage />} />
-              <Route path="/club" element={<ClubPage />} />
-              <Route path="/workspace" element={<Navigate to="/library" replace />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ErrorBoundary>
+            <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/share/:token" element={<SharedSession />} />
+              <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/library" element={<LibraryPage />} />
+                <Route path="/favorites" element={<LibraryPage defaultFavoritesOnly />} />
+                <Route path="/trainings" element={<SessionsPage />} />
+                <Route path="/sessions" element={<Navigate to="/trainings" replace />} />
+                <Route path="/templates" element={<TemplatesPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/season" element={<SeasonPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/club" element={<ClubPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/workspace" element={<Navigate to="/library" replace />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            </BrowserRouter>
+          </ErrorBoundary>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

@@ -3,8 +3,8 @@ import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, Dumbbell, BookOpen, Bookmark, CalendarDays, CalendarRange, Star,
-  Globe, Building2, Plus, Sparkles, LogOut, User, Menu, X, PanelRightOpen,
-  PanelRightClose, MoreHorizontal,
+  Globe, Building2, Plus, Sparkles, LogOut, Menu, X, PanelRightOpen,
+  PanelRightClose, MoreHorizontal, Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,7 @@ import { MatchdayMode } from "@/components/MatchdayMode";
 import { CreateExerciseModal } from "@/components/CreateExerciseModal";
 import { GeneratorModal } from "@/components/GeneratorModal";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 function navItemClasses(isActive: boolean) {
@@ -77,6 +78,7 @@ export default function AppLayout() {
         <span className="text-xl">⚽</span>
         <span className="font-semibold tracking-tight flex-1">{t("app.name")}</span>
         <LanguageSwitcher compact />
+        <ThemeToggle compact />
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2.5 mb-1.5">
@@ -137,22 +139,31 @@ export default function AppLayout() {
             ))}
           </select>
         )}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-primary" />
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 p-1 rounded-md hover:bg-muted transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center flex-shrink-0 overflow-hidden text-xs font-semibold shadow-glow">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span>{(name || "U").slice(0, 1).toUpperCase()}</span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-foreground truncate">{name}</p>
             <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
           </div>
-          <button
-            onClick={signOut}
-            title={t("common.signOut")}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
+          <Settings className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground" />
+        </Link>
+        <button
+          onClick={signOut}
+          title={t("common.signOut")}
+          className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          {t("common.signOut")}
+        </button>
       </div>
     </nav>
   );
@@ -205,6 +216,7 @@ export default function AppLayout() {
               <span className="font-semibold text-sm">{t("app.name")}</span>
             </Link>
             <div className="flex items-center gap-1">
+              <ThemeToggle compact />
               <LanguageSwitcher compact />
               <button
                 onClick={() => setBuilderOpen(true)}
