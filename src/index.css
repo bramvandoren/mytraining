@@ -5,8 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  /* ============================================
+     PITCH AURORA — Light theme
+     Deep navy ink on bright surfaces with electric pitch-green accents.
+     ============================================ */
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 99%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -15,8 +19,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 142 71% 45%;
+    --primary: 152 76% 40%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 142 88% 60%;
 
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -24,29 +29,88 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 152 76% 95%;
+    --accent-foreground: 152 76% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 142 71% 45%;
+    --ring: 152 76% 40%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --shadow-card: 0 0 0 1px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.05);
-    --shadow-card-hover: 0 0 0 1px rgba(0,0,0,.05), 0 8px 16px rgba(0,0,0,.08);
+    --shadow-card: 0 0 0 1px rgba(15, 23, 42, .04), 0 2px 4px rgba(15, 23, 42, .04);
+    --shadow-card-hover: 0 0 0 1px rgba(15, 23, 42, .06), 0 12px 24px rgba(15, 23, 42, .08);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / .15), 0 8px 24px hsl(var(--primary) / .25);
 
-    --sidebar-background: 0 0% 98%;
+    --gradient-aurora: radial-gradient(ellipse 80% 60% at 20% 20%, hsl(152 88% 55% / .35), transparent 60%),
+                       radial-gradient(ellipse 70% 50% at 80% 30%, hsl(180 70% 55% / .25), transparent 60%),
+                       radial-gradient(ellipse 60% 50% at 50% 90%, hsl(142 88% 50% / .20), transparent 60%);
+    --gradient-primary: linear-gradient(135deg, hsl(152 76% 40%), hsl(142 88% 55%));
+
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 16% 47%;
-    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary: 152 76% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-accent: 152 76% 95%;
+    --sidebar-accent-foreground: 152 76% 25%;
     --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 142 71% 45%;
+    --sidebar-ring: 152 76% 40%;
+  }
+
+  /* ============================================
+     PITCH AURORA — Dark theme
+     Deep navy stadium night with glowing pitch-green aurora accents.
+     ============================================ */
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 30% 96%;
+
+    --card: 222 40% 9%;
+    --card-foreground: 210 30% 96%;
+
+    --popover: 222 40% 9%;
+    --popover-foreground: 210 30% 96%;
+
+    --primary: 142 88% 55%;
+    --primary-foreground: 222 47% 8%;
+    --primary-glow: 152 100% 65%;
+
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 30% 96%;
+
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 152 80% 18%;
+    --accent-foreground: 142 90% 75%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 30% 18%;
+    --input: 222 30% 16%;
+    --ring: 142 88% 55%;
+
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, .04), 0 2px 6px rgba(0, 0, 0, .4);
+    --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, .06), 0 12px 30px rgba(0, 0, 0, .5);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / .25), 0 8px 32px hsl(var(--primary) / .35);
+
+    --gradient-aurora: radial-gradient(ellipse 80% 60% at 15% 15%, hsl(152 100% 45% / .35), transparent 60%),
+                       radial-gradient(ellipse 70% 50% at 85% 25%, hsl(180 100% 50% / .22), transparent 60%),
+                       radial-gradient(ellipse 60% 50% at 50% 95%, hsl(142 100% 50% / .25), transparent 60%);
+    --gradient-primary: linear-gradient(135deg, hsl(142 88% 55%), hsl(152 100% 65%));
+
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 215 20% 70%;
+    --sidebar-primary: 142 88% 55%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 142 90% 75%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 142 88% 55%;
   }
 }
 
@@ -55,13 +119,21 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "cv11", "ss01", "ss03";
   }
 
   .font-mono {
     font-family: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  /* Focus visible: WCAG-friendly */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
@@ -72,4 +144,42 @@
   .shadow-card-hover {
     box-shadow: var(--shadow-card-hover);
   }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Aurora background — animated radial gradients */
+  .bg-aurora {
+    background-image: var(--gradient-aurora);
+    background-color: hsl(var(--background));
+  }
+
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+
+  .text-gradient-primary {
+    background-image: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Aurora drifting animation for auth & hero backgrounds */
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -2%, 0) scale(1.05); }
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+.dark .aurora-orb {
+  opacity: 0.45;
 }
