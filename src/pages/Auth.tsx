@@ -85,161 +85,165 @@ const Auth = () => {
     mode === "login" ? t("auth.signInSub") : mode === "signup" ? t("auth.signUpSub") : t("auth.resetSub");
 
   return (
-    <AuroraBackground className="min-h-screen flex">
+    <AuroraBackground className="min-h-screen w-screen overflow-x-hidden">
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1">
         <ThemeToggle compact />
         <LanguageSwitcher compact />
       </div>
 
-      {/* Left brand panel — desktop only */}
-      <aside className="hidden lg:flex w-[44%] xl:w-[48%] p-12 flex-col justify-between relative z-10">
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="text-2xl">⚽</span>
-          <span className="font-semibold tracking-tight text-foreground">{t("app.name")}</span>
-        </Link>
+      {/* Gecorrigeerde flex-container die de volledige breedte opeist */}
+      <div className="flex flex-col lg:flex-row w-full min-h-screen">
+        
+        {/* Left brand panel — Neemt nu strak 45% van het scherm in op desktop */}
+        <aside className="hidden lg:flex lg:w-[45%] xl:w-[48%] p-12 flex-col justify-between relative z-10 box-border">
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="text-2xl">⚽</span>
+            <span className="font-semibold tracking-tight text-foreground">{t("app.name")}</span>
+          </Link>
 
-        <div className="max-w-md">
-          <h2 className="text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.1] text-foreground">
-            {t("auth.brandHeadline")}
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-            {t("auth.brandSub")}
-          </p>
+          <div className="max-w-md">
+            <h2 className="text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.1] text-foreground">
+              {t("auth.brandHeadline")}
+            </h2>
+            <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+              {t("auth.brandSub")}
+            </p>
 
-          <ul className="mt-8 space-y-3.5">
-            {[
-              { icon: Sparkles, text: t("auth.benefitGenerator") },
-              { icon: Trophy, text: t("auth.benefitMatchday") },
-              { icon: ShieldCheck, text: t("auth.benefitPrivate") },
-            ].map(({ icon: Icon, text }, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-foreground/90">
-                <span className="mt-0.5 w-7 h-7 rounded-md bg-primary/15 text-primary flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                <span className="pt-1">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} {t("app.name")}</p>
-      </aside>
-
-      {/* Form panel */}
-      <main className="flex-1 flex items-center justify-center p-6 relative z-10">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden text-center mb-6">
-            <span className="text-3xl">⚽</span>
-            <h1 className="text-lg font-semibold mt-2">{t("app.name")}</h1>
+            <ul className="mt-8 space-y-3.5">
+              {[
+                { icon: Sparkles, text: t("auth.benefitGenerator") },
+                { icon: Trophy, text: t("auth.benefitMatchday") },
+                { icon: ShieldCheck, text: t("auth.benefitPrivate") },
+              ].map(({ icon: Icon, text }, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-foreground/90">
+                  <span className="mt-0.5 w-7 h-7 rounded-md bg-primary/15 text-primary flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="pt-1">{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="bg-card/80 backdrop-blur-xl border border-border rounded-xl p-6 sm:p-8 shadow-card-hover">
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">{heading}</h1>
-              <p className="text-sm text-muted-foreground mt-1.5">{sub}</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} {t("app.name")}</p>
+        </aside>
+
+        {/* Form panel — Neemt de overige 55% van het scherm in op desktop */}
+        <main className="flex-1 lg:w-[55%] xl:w-[52%] flex items-center justify-center p-6 relative z-10 box-border">
+          <div className="w-full max-w-sm">
+            <div className="lg:hidden text-center mb-6">
+              <span className="text-3xl">⚽</span>
+              <h1 className="text-lg font-semibold mt-2">{t("app.name")}</h1>
             </div>
 
-            <form
-              onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgot}
-              className="space-y-3"
-            >
-              {mode === "signup" && (
-                <>
-                  <Field
-                    label={t("auth.username")}
-                    hint={t("auth.usernameHint")}
-                    type="text"
-                    autoComplete="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    required
-                    minLength={3}
-                    maxLength={20}
-                    placeholder="coach_42"
-                  />
-                  <Field
-                    label={t("auth.displayName")}
-                    type="text"
-                    autoComplete="name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder={t("auth.displayName")}
-                  />
-                </>
-              )}
-              <Field
-                label={t("auth.email")}
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="you@club.com"
-              />
-              {mode !== "forgot" && (
-                <Field
-                  label={t("auth.password")}
-                  type="password"
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="••••••••"
-                />
-              )}
+            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-xl p-6 sm:p-8 shadow-card-hover">
+              <div className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">{heading}</h1>
+                <p className="text-sm text-muted-foreground mt-1.5">{sub}</p>
+              </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="group w-full h-10 mt-1 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-medium hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-glow flex items-center justify-center gap-2"
+              <form
+                onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgot}
+                className="space-y-3"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+                {mode === "signup" && (
                   <>
-                    {mode === "login" ? t("auth.signInBtn") : mode === "signup" ? t("auth.createAccount") : t("auth.sendResetLink")}
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    <Field
+                      label={t("auth.username")}
+                      hint={t("auth.usernameHint")}
+                      type="text"
+                      autoComplete="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                      required
+                      minLength={3}
+                      maxLength={20}
+                      placeholder="coach_42"
+                    />
+                    <Field
+                      label={t("auth.displayName")}
+                      type="text"
+                      autoComplete="name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder={t("auth.displayName")}
+                    />
                   </>
                 )}
-              </button>
-            </form>
+                <Field
+                  label={t("auth.email")}
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@club.com"
+                />
+                {mode !== "forgot" && (
+                  <Field
+                    label={t("auth.password")}
+                    type="password"
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="••••••••"
+                  />
+                )}
 
-            <div className="mt-5 text-center space-y-2 text-sm">
-              {mode === "login" && (
-                <>
-                  <button onClick={() => setMode("forgot")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    {t("auth.forgotPassword")}
-                  </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group w-full h-10 mt-1 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-medium hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-glow flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      {mode === "login" ? t("auth.signInBtn") : mode === "signup" ? t("auth.createAccount") : t("auth.sendResetLink")}
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-5 text-center space-y-2 text-sm">
+                {mode === "login" && (
+                  <>
+                    <button onClick={() => setMode("forgot")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      {t("auth.forgotPassword")}
+                    </button>
+                    <p className="text-muted-foreground">
+                      {t("auth.noAccount")}{" "}
+                      <button onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">
+                        {t("auth.createAccount")}
+                      </button>
+                    </p>
+                  </>
+                )}
+                {mode === "signup" && (
                   <p className="text-muted-foreground">
-                    {t("auth.noAccount")}{" "}
-                    <button onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">
-                      {t("auth.createAccount")}
+                    {t("auth.haveAccount")}{" "}
+                    <button onClick={() => setMode("login")} className="text-primary font-medium hover:underline">
+                      {t("auth.signInBtn")}
                     </button>
                   </p>
-                </>
-              )}
-              {mode === "signup" && (
-                <p className="text-muted-foreground">
-                  {t("auth.haveAccount")}{" "}
+                )}
+                {mode === "forgot" && (
                   <button onClick={() => setMode("login")} className="text-primary font-medium hover:underline">
-                    {t("auth.signInBtn")}
+                    {t("auth.backToSignIn")}
                   </button>
-                </p>
-              )}
-              {mode === "forgot" && (
-                <button onClick={() => setMode("login")} className="text-primary font-medium hover:underline">
-                  {t("auth.backToSignIn")}
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          <p className="mt-4 text-center text-[11px] text-muted-foreground">
-            {t("auth.legal")}
-          </p>
-        </div>
-      </main>
+            <p className="mt-4 text-center text-[11px] text-muted-foreground">
+              {t("auth.legal")}
+            </p>
+          </div>
+        </main>
+      </div>
     </AuroraBackground>
   );
 };
