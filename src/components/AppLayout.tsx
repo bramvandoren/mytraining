@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, Dumbbell, BookOpen, Bookmark, CalendarDays, CalendarRange, Star,
   Globe, Building2, Plus, Sparkles, LogOut, Menu, X, PanelRightOpen,
-  PanelRightClose, MoreHorizontal, Settings,
+  PanelRightClose, MoreHorizontal, Settings, Users, Activity, ImageIcon, FolderOpen,
+  UserSquare2, BarChart3,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +53,20 @@ export default function AppLayout() {
     { to: "/club", label: t("nav.club"), icon: Building2 },
   ];
 
+  // Sidebar (desktop) hides /club from main list when club sub-nav is shown
+  const NAV_SIDEBAR = NAV.filter((n) => n.to !== "/club" || !activeClub);
+
+  const CLUB_NAV = [
+    { to: "/club", label: t("nav.dashboard"), icon: Building2, end: true },
+    { to: "/club/teams", label: "Teams", icon: FolderOpen },
+    { to: "/club/players", label: "Players", icon: UserSquare2 },
+    { to: "/club/coaches", label: "Coaches", icon: Users },
+    { to: "/club/library", label: "Library", icon: BookOpen },
+    { to: "/club/media", label: "Media", icon: ImageIcon },
+    { to: "/club/analytics", label: "Analytics", icon: BarChart3 },
+    { to: "/club/activity", label: "Activity", icon: Activity },
+  ];
+
   const MOBILE_BOTTOM = NAV.slice(0, 4);
 
   useEffect(() => {
@@ -84,7 +99,7 @@ export default function AppLayout() {
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2.5 mb-1.5">
           {t("nav.workspace")}
         </p>
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {NAV_SIDEBAR.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -95,6 +110,25 @@ export default function AppLayout() {
             <span className="truncate">{label}</span>
           </NavLink>
         ))}
+
+        {activeClub && (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2.5 mt-5 mb-1.5">
+              {activeClub.name}
+            </p>
+            {CLUB_NAV.map(({ to, label, icon: Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end as any}
+                className={({ isActive }) => navItemClasses(isActive)}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{label}</span>
+              </NavLink>
+            ))}
+          </>
+        )}
 
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2.5 mt-5 mb-1.5">
           {t("nav.quickActions")}

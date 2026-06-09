@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useEffect, useState } from "react";
 
+export type ClubRole = "owner" | "admin" | "coach" | "assistant";
+
 export interface Club {
   id: string;
   name: string;
@@ -13,7 +15,8 @@ export interface Club {
 export interface ClubMember {
   club_id: string;
   user_id: string;
-  role: "admin" | "coach";
+  role: ClubRole;
+  joined_at?: string;
 }
 
 export function useClubs() {
@@ -59,6 +62,22 @@ export function useClubMembers(clubId: string | null) {
   });
 }
 
+export function useClubPermissions(clubId: string | null) {
+  const { user } = useAuth();
+  const { data: members = [] } = useClubMembers(clubId);
+  const me = members.find((m) => m.user_id === user?.id);
+  const role = me?.role ?? null;
+  return {
+    role,
+    isOwner: role === "owner",
+    isAdmin: role === "owner" || role === "admin",
+    canCreate: role === "owner" || role === "admin" || role === "coach",
+    canEdit: role === "owner" || role === "admin",
+    canInvite: role === "owner" || role === "admin",
+    isMember: !!role,
+  };
+}
+
 export function useCreateClub() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -74,7 +93,7 @@ export function useCreateClub() {
       const c = club as any;
       const { error: e2 } = await supabase
         .from("club_members" as any)
-        .insert({ club_id: c.id, user_id: user.id, role: "admin" } as any);
+        .insert({ club_id: c.id, user_id: user.id, role: "owner" } as any);
       if (e2) throw e2;
       return c as Club;
     },
@@ -82,10 +101,25 @@ export function useCreateClub() {
   });
 }
 
+export function useUpdateMemberRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clubId, userId, role }: { clubId: string; userId: string; role: ClubRole }) => {
+      const { error } = await supabase
+        .from("club_members" as any)
+        .update({ role } as any)
+        .eq("club_id", clubId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["club_members", v.clubId] }),
+  });
+}
+
 export function useAddMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ clubId, displayName, role }: { clubId: string; displayName: string; role: "admin" | "coach" }) => {
+    mutationFn: async ({ clubId, displayName, role }: { clubId: string; displayName: string; role: ClubRole }) => {
       const { data: prof, error: e0 } = await supabase
         .from("profiles")
         .select("id")

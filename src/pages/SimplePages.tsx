@@ -5,7 +5,7 @@ import { Templates } from "@/components/Templates";
 import { Calendar } from "@/components/Calendar";
 import { SeasonPlanner } from "@/components/SeasonPlanner";
 import { Marketplace } from "@/components/Marketplace";
-import { ClubManager } from "@/components/ClubManager";
+
 
 export function SessionsPage() {
   const { t } = useTranslation();
@@ -26,8 +26,4 @@ export function SeasonPage() {
 export function CommunityPage() {
   const { t } = useTranslation();
   return <PageShell title={t("nav.community")} subtitle=""><Marketplace /></PageShell>;
-}
-export function ClubPage() {
-  const { t } = useTranslation();
-  return <PageShell title={t("nav.club")} subtitle=""><ClubManager /></PageShell>;
 }

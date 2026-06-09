@@ -9,12 +9,24 @@ import AppLayout from "@/components/AppLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Dashboard from "./pages/Dashboard.tsx";
 import LibraryPage from "./pages/LibraryPage.tsx";
-import { SessionsPage, TemplatesPage, CalendarPage, SeasonPage, CommunityPage, ClubPage } from "./pages/SimplePages.tsx";
+import { SessionsPage, TemplatesPage, CalendarPage, SeasonPage, CommunityPage } from "./pages/SimplePages.tsx";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import SharedSession from "./pages/SharedSession.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
+import ClubDashboard from "./pages/ClubDashboard.tsx";
+import TeamsPage from "./pages/TeamsPage.tsx";
+import CoachesPage from "./pages/CoachesPage.tsx";
+import SharedLibraryPage from "./pages/SharedLibraryPage.tsx";
+import ActivityPage from "./pages/ActivityPage.tsx";
+import MediaPage from "./pages/MediaPage.tsx";
+import AcceptInvitePage from "./pages/AcceptInvitePage.tsx";
+import PlayersPage from "./pages/PlayersPage.tsx";
+import PlayerDetailPage from "./pages/PlayerDetailPage.tsx";
+import TeamDetailPage from "./pages/TeamDetailPage.tsx";
+import AttendancePage from "./pages/AttendancePage.tsx";
+import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +50,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/share/:token" element={<SharedSession />} />
+              <Route path="/invite/:token" element={<AcceptInvitePage />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/library" element={<LibraryPage />} />
@@ -48,7 +61,17 @@ const App = () => (
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/season" element={<SeasonPage />} />
                 <Route path="/community" element={<CommunityPage />} />
-                <Route path="/club" element={<ClubPage />} />
+                <Route path="/club" element={<ClubDashboard />} />
+                <Route path="/club/teams" element={<TeamsPage />} />
+                <Route path="/club/teams/:id" element={<TeamDetailPage />} />
+                <Route path="/club/coaches" element={<CoachesPage />} />
+                <Route path="/club/players" element={<PlayersPage />} />
+                <Route path="/club/players/:id" element={<PlayerDetailPage />} />
+                <Route path="/club/library" element={<SharedLibraryPage />} />
+                <Route path="/club/activity" element={<ActivityPage />} />
+                <Route path="/club/media" element={<MediaPage />} />
+                <Route path="/club/analytics" element={<AnalyticsPage />} />
+                <Route path="/calendar/:id/attendance" element={<AttendancePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/workspace" element={<Navigate to="/library" replace />} />
               </Route>
