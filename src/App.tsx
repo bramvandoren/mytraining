@@ -27,6 +27,8 @@ import PlayerDetailPage from "./pages/PlayerDetailPage.tsx";
 import TeamDetailPage from "./pages/TeamDetailPage.tsx";
 import AttendancePage from "./pages/AttendancePage.tsx";
 import AnalyticsPage from "./pages/AnalyticsPage.tsx";
+import MatchesPage from "./pages/MatchesPage.tsx";
+import MatchDetailPage from "./pages/MatchDetailPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,8 @@ const App = () => (
                 <Route path="/club/activity" element={<ActivityPage />} />
                 <Route path="/club/media" element={<MediaPage />} />
                 <Route path="/club/analytics" element={<AnalyticsPage />} />
+                <Route path="/club/matches" element={<MatchesPage />} />
+                <Route path="/club/matches/:id" element={<MatchDetailPage />} />
                 <Route path="/calendar/:id/attendance" element={<AttendancePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/workspace" element={<Navigate to="/library" replace />} />

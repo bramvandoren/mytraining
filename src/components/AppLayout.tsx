@@ -5,7 +5,7 @@ import {
   Home, Dumbbell, BookOpen, Bookmark, CalendarDays, CalendarRange, Star,
   Globe, Building2, Plus, Sparkles, LogOut, Menu, X, PanelRightOpen,
   PanelRightClose, MoreHorizontal, Settings, Users, Activity, ImageIcon, FolderOpen,
-  UserSquare2, BarChart3,
+  UserSquare2, BarChart3, Trophy,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +60,7 @@ export default function AppLayout() {
     { to: "/club", label: t("nav.dashboard"), icon: Building2, end: true },
     { to: "/club/teams", label: "Teams", icon: FolderOpen },
     { to: "/club/players", label: "Players", icon: UserSquare2 },
+    { to: "/club/matches", label: "Matches", icon: Trophy },
     { to: "/club/coaches", label: "Coaches", icon: Users },
     { to: "/club/library", label: "Library", icon: BookOpen },
     { to: "/club/media", label: "Media", icon: ImageIcon },
