@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Bell, BellOff, Check, CheckCheck, Trash2, X } from "lucide-react";
 import { format, parseISO, isToday, isYesterday } from "date-fns";
 import {
@@ -5,7 +6,6 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useDeleteNotification,
-  NOTIFICATION_TYPE_LABEL,
   type AppNotification,
 } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ const TYPE_COLORS: Record<string, string> = {
 function relativeDate(iso: string) {
   const d = parseISO(iso);
   if (isToday(d)) return format(d, "HH:mm");
-  if (isYesterday(d)) return "Yesterday";
+  if (isYesterday(d)) return format(d, "d MMM");
   return format(d, "d MMM");
 }
 
@@ -31,6 +31,7 @@ interface Props {
 }
 
 export function NotificationsPanel({ onClose }: Props) {
+  const { t } = useTranslation();
   const { data: notifications = [], isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -42,11 +43,10 @@ export function NotificationsPanel({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-background border-l border-border flex flex-col h-full shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 h-14 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4" />
-            <span className="font-semibold text-sm">Notifications</span>
+            <span className="font-semibold text-sm">{t("notifications.title")}</span>
             {unread > 0 && (
               <span className="text-[10px] font-mono bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
                 {unread}
@@ -57,7 +57,7 @@ export function NotificationsPanel({ onClose }: Props) {
             {unread > 0 && (
               <button
                 onClick={() => markAll.mutate()}
-                title="Mark all read"
+                title={t("notifications.markAllRead")}
                 className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
               >
                 <CheckCheck className="w-4 h-4" />
@@ -72,17 +72,16 @@ export function NotificationsPanel({ onClose }: Props) {
           </div>
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && (
             <div className="flex items-center justify-center p-8 text-muted-foreground text-sm">
-              Loading…
+              {t("notifications.loading")}
             </div>
           )}
           {!isLoading && notifications.length === 0 && (
             <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground gap-3">
               <BellOff className="w-8 h-8 opacity-40" />
-              <p className="text-sm">No notifications yet</p>
+              <p className="text-sm">{t("notifications.empty")}</p>
             </div>
           )}
           <ul className="divide-y divide-border">
@@ -110,6 +109,9 @@ function NotificationItem({
   onMarkRead: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
+  const typeLabel = t(`notifications.types.${n.type}`, { defaultValue: n.type });
+
   return (
     <li
       className={cn(
@@ -130,9 +132,7 @@ function NotificationItem({
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
         )}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] text-muted-foreground">
-            {NOTIFICATION_TYPE_LABEL[n.type]}
-          </span>
+          <span className="text-[10px] text-muted-foreground">{typeLabel}</span>
           <span className="text-[10px] text-muted-foreground">·</span>
           <span className="text-[10px] text-muted-foreground">{relativeDate(n.created_at)}</span>
         </div>
@@ -141,7 +141,7 @@ function NotificationItem({
         {!n.read && (
           <button
             onClick={onMarkRead}
-            title="Mark as read"
+            title={t("common.confirm")}
             className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground"
           >
             <Check className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ function NotificationItem({
         )}
         <button
           onClick={onDelete}
-          title="Delete"
+          title={t("common.delete")}
           className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-rose-500"
         >
           <Trash2 className="w-3.5 h-3.5" />

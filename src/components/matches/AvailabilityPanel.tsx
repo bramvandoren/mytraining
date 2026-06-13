@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, XCircle, HelpCircle, AlertTriangle, Send, RefreshCw } from "lucide-react";
 import {
   useAvailability,
   useUpsertAvailability,
   useRequestAvailability,
-  AVAILABILITY_STATUS_LABEL,
   type AvailabilityStatus,
 } from "@/hooks/useAvailability";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -47,6 +47,7 @@ interface Props {
 }
 
 export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props) {
+  const { t } = useTranslation();
   const { data: records = [], isLoading } = useAvailability("match", matchId);
   const { data: allPlayers = [] } = usePlayers(clubId);
   const upsert = useUpsertAvailability();
@@ -64,6 +65,13 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
     {} as Record<AvailabilityStatus, number>,
   );
 
+  const STATUS_LABEL: Record<AvailabilityStatus, string> = {
+    available: t("availability.available"),
+    unavailable: t("availability.unavailable"),
+    unsure: t("availability.unsure"),
+    injured: t("availability.injured"),
+  };
+
   async function handleSetStatus(playerId: string, status: AvailabilityStatus) {
     setUpdating(playerId);
     try {
@@ -75,7 +83,7 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
         status,
       });
     } catch {
-      toast.error("Failed to update availability");
+      toast.error(t("availability.updateFailed"));
     } finally {
       setUpdating(null);
     }
@@ -90,15 +98,14 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
         event_id: matchId,
         player_ids: allIds,
       });
-      toast.success(`Availability requested for ${allIds.length} players`);
+      toast.success(t("availability.requested", { count: allIds.length }));
     } catch {
-      toast.error("Failed to request availability");
+      toast.error(t("availability.requestFailed"));
     }
   }
 
   return (
     <div className="space-y-4">
-      {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {STATUSES.map((s) => {
           const { icon: Icon, active } = STATUS_CONFIG[s];
@@ -108,7 +115,7 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
                 <Icon className="w-4 h-4" />
               </div>
               <p className="text-2xl font-semibold tabular-nums">{counts[s]}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{AVAILABILITY_STATUS_LABEL[s]}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{STATUS_LABEL[s]}</p>
             </div>
           );
         })}
@@ -122,24 +129,23 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
             className="inline-flex items-center gap-2 px-3 h-9 rounded-md border border-border hover:bg-muted text-sm disabled:opacity-50"
           >
             <Send className="w-3.5 h-3.5" />
-            Request from all players
+            {t("availability.requestAll")}
           </button>
         </div>
       )}
 
-      {/* Player rows */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         {isLoading && (
           <div className="flex items-center justify-center p-8 text-muted-foreground">
-            <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
+            <RefreshCw className="w-4 h-4 animate-spin mr-2" /> {t("availability.loading")}
           </div>
         )}
-        {!isLoading && allPlayers.length === 0 && (
-          <p className="text-sm text-muted-foreground p-4 text-center">No players in this club yet.</p>
+        {!isLoading && players.length === 0 && (
+          <p className="text-sm text-muted-foreground p-4 text-center">{t("availability.noPlayers")}</p>
         )}
-        {!isLoading && allPlayers.length > 0 && (
+        {!isLoading && players.length > 0 && (
           <ul className="divide-y divide-border">
-            {allPlayers.map((player) => {
+            {players.map((player) => {
               const record = byPlayer[player.id];
               const currentStatus = record?.status as AvailabilityStatus | undefined;
               const isUpdating = updating === player.id;
@@ -170,7 +176,7 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
                       return (
                         <button
                           key={s}
-                          title={AVAILABILITY_STATUS_LABEL[s]}
+                          title={STATUS_LABEL[s]}
                           disabled={!canManage || isUpdating}
                           onClick={() => canManage && handleSetStatus(player.id, s)}
                           className={cn(
@@ -193,7 +199,7 @@ export function AvailabilityPanel({ matchId, clubId, teamId, canManage }: Props)
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Click a status icon to update a player's availability for this match.
+        {t("availability.hint")}
       </p>
     </div>
   );

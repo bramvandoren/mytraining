@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Save, Target, Zap, Eye, MessageSquare, Star } from "lucide-react";
 import { useMatchPreparation, useSaveMatchPreparation } from "@/hooks/useMatchPreparation";
 import { toast } from "sonner";
-
-interface Section {
-  key: keyof FormState;
-  label: string;
-  icon: typeof Target;
-  placeholder: string;
-}
 
 interface FormState {
   match_objectives: string;
@@ -18,45 +12,13 @@ interface FormState {
   key_focus_points: string;
 }
 
-const SECTIONS: Section[] = [
-  {
-    key: "match_objectives",
-    label: "Match Objectives",
-    icon: Target,
-    placeholder: "What do we want to achieve in this match? Set the goals and mindset.",
-  },
-  {
-    key: "tactical_notes",
-    label: "Tactical Notes",
-    icon: Zap,
-    placeholder: "Formation, pressing triggers, defensive shape, set pieces…",
-  },
-  {
-    key: "opponent_analysis",
-    label: "Opponent Analysis",
-    icon: Eye,
-    placeholder: "Their key players, strengths to neutralize, weaknesses to exploit…",
-  },
-  {
-    key: "coach_notes",
-    label: "Coach Notes",
-    icon: MessageSquare,
-    placeholder: "Internal notes for the coaching staff…",
-  },
-  {
-    key: "key_focus_points",
-    label: "Key Focus Points",
-    icon: Star,
-    placeholder: "The 2–3 things every player must remember today…",
-  },
-];
-
 interface Props {
   matchId: string;
   canEdit: boolean;
 }
 
 export function MatchPreparation({ matchId, canEdit }: Props) {
+  const { t } = useTranslation();
   const { data: prep } = useMatchPreparation(matchId);
   const save = useSaveMatchPreparation();
 
@@ -80,12 +42,20 @@ export function MatchPreparation({ matchId, canEdit }: Props) {
     }
   }, [prep]);
 
+  const SECTIONS: { key: keyof FormState; label: string; icon: typeof Target; placeholder: string }[] = [
+    { key: "match_objectives", label: t("matchPrep.objectives"), icon: Target, placeholder: t("matchPrep.objectivesPlaceholder") },
+    { key: "tactical_notes", label: t("matchPrep.tactical"), icon: Zap, placeholder: t("matchPrep.tacticalPlaceholder") },
+    { key: "opponent_analysis", label: t("matchPrep.opponent"), icon: Eye, placeholder: t("matchPrep.opponentPlaceholder") },
+    { key: "coach_notes", label: t("matchPrep.coachNotes"), icon: MessageSquare, placeholder: t("matchPrep.coachNotesPlaceholder") },
+    { key: "key_focus_points", label: t("matchPrep.keyFocus"), icon: Star, placeholder: t("matchPrep.keyFocusPlaceholder") },
+  ];
+
   async function handleSave() {
     try {
       await save.mutateAsync({ match_id: matchId, ...form });
-      toast.success("Match preparation saved");
+      toast.success(t("matchPrep.saved"));
     } catch {
-      toast.error("Failed to save");
+      toast.error(t("matchPrep.saveFailed"));
     }
   }
 
@@ -95,7 +65,7 @@ export function MatchPreparation({ matchId, canEdit }: Props) {
     <div className="space-y-4">
       {isEmpty && !canEdit && (
         <p className="text-sm text-muted-foreground py-6 text-center">
-          No match preparation added yet.
+          {t("matchPrep.empty")}
         </p>
       )}
 
@@ -132,7 +102,7 @@ export function MatchPreparation({ matchId, canEdit }: Props) {
           className="inline-flex items-center gap-2 px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          {save.isPending ? "Saving…" : "Save Preparation"}
+          {save.isPending ? t("matchPrep.saving") : t("matchPrep.save")}
         </button>
       )}
     </div>

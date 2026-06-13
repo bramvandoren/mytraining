@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -21,12 +22,10 @@ function useClubAttendanceStats(clubId: string | null) {
     queryKey: ["club_attendance_stats", clubId],
     enabled: !!clubId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance_records" as any)
-        .select(
-          "player_id, status, players!inner(club_id)",
-        )
-        .eq("players.club_id" as any, clubId!);
+      const { data, error }: { data: any[] | null; error: any } = await (supabase as any)
+        .from("attendance_records")
+        .select("player_id, status, players!inner(club_id)")
+        .eq("players.club_id", clubId!);
       if (error) throw error;
       return (data ?? []) as any[];
     },
@@ -38,6 +37,7 @@ interface Props {
 }
 
 export function AttendanceStats({ clubId }: Props) {
+  const { t } = useTranslation();
   const { data: rawRecords = [], isLoading } = useClubAttendanceStats(clubId);
   const { data: players = [] } = usePlayers(clubId);
 
@@ -71,11 +71,6 @@ export function AttendanceStats({ clubId }: Props) {
     [players],
   );
 
-  const totalSessions = useMemo(() => {
-    const ids = new Set(rawRecords.map((r: any) => r.scheduled_training_id).filter(Boolean));
-    return ids.size || (rawRecords.length > 0 ? 1 : 0);
-  }, [rawRecords]);
-
   const overallRate = useMemo(() => {
     if (stats.length === 0) return 0;
     return Math.round(stats.reduce((sum, s) => sum + s.rate, 0) / stats.length);
@@ -84,39 +79,37 @@ export function AttendanceStats({ clubId }: Props) {
   const topPresent = stats.slice(0, 5);
   const mostAbsent = [...stats].sort((a, b) => b.absent - a.absent).slice(0, 3);
 
-  if (isLoading) return <div className="text-sm text-muted-foreground p-4">Loading attendance…</div>;
+  if (isLoading) return <div className="text-sm text-muted-foreground p-4">{t("attendance.loading")}</div>;
 
   if (rawRecords.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground text-sm">
-        No attendance records yet. Start by registering attendance for a training session.
+        {t("attendance.noData")}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Overview */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <p className="text-2xl font-semibold text-emerald-500">{overallRate}%</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Avg. attendance rate</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("attendance.avgRate")}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <p className="text-2xl font-semibold">{stats.length}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Players tracked</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("attendance.playersTracked")}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4 text-center">
           <p className="text-2xl font-semibold">{rawRecords.length}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Records total</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("attendance.recordsTotal")}</p>
         </div>
       </div>
 
-      {/* Top attenders */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex items-center gap-2 mb-3">
           <Award className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold">Most Present</h3>
+          <h3 className="text-sm font-semibold">{t("attendance.mostPresent")}</h3>
         </div>
         <ul className="space-y-2">
           {topPresent.map((stat, i) => {
@@ -154,12 +147,11 @@ export function AttendanceStats({ clubId }: Props) {
         </ul>
       </div>
 
-      {/* Attendance concerns */}
       {mostAbsent.some((s) => s.absent > 0) && (
         <div className="bg-card border border-border rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="w-4 h-4 text-rose-500" />
-            <h3 className="text-sm font-semibold">Most Absences</h3>
+            <h3 className="text-sm font-semibold">{t("attendance.mostAbsences")}</h3>
           </div>
           <ul className="space-y-2">
             {mostAbsent.filter((s) => s.absent > 0).map((stat) => {
@@ -177,7 +169,7 @@ export function AttendanceStats({ clubId }: Props) {
                     </p>
                   </div>
                   <span className="text-sm font-semibold text-rose-500">
-                    {stat.absent} absent
+                    {t("attendance.absentCount", { count: stat.absent })}
                   </span>
                 </li>
               );
@@ -186,23 +178,22 @@ export function AttendanceStats({ clubId }: Props) {
         </div>
       )}
 
-      {/* Full table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold">All Players</h3>
+          <h3 className="text-sm font-semibold">{t("attendance.allPlayers")}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="px-4 py-2 text-left font-medium text-muted-foreground text-xs">Player</th>
-                <th className="px-3 py-2 text-center font-medium text-muted-foreground text-xs">Rate</th>
-                <th className="px-3 py-2 text-center font-medium text-emerald-600 text-xs">Present</th>
-                <th className="px-3 py-2 text-center font-medium text-rose-500 text-xs">Absent</th>
-                <th className="px-3 py-2 text-center font-medium text-sky-500 text-xs">Late</th>
-                <th className="px-3 py-2 text-center font-medium text-amber-500 text-xs">Injured</th>
-                <th className="px-3 py-2 text-center font-medium text-violet-500 text-xs">Excused</th>
+                <th className="px-4 py-2 text-left font-medium text-muted-foreground text-xs">{t("common.players")}</th>
+                <th className="px-3 py-2 text-center font-medium text-muted-foreground text-xs">{t("attendance.rate")}</th>
+                <th className="px-3 py-2 text-center font-medium text-emerald-600 text-xs">{t("attendance.present")}</th>
+                <th className="px-3 py-2 text-center font-medium text-rose-500 text-xs">{t("attendance.absent")}</th>
+                <th className="px-3 py-2 text-center font-medium text-sky-500 text-xs">{t("attendance.late")}</th>
+                <th className="px-3 py-2 text-center font-medium text-amber-500 text-xs">{t("attendance.injured")}</th>
+                <th className="px-3 py-2 text-center font-medium text-violet-500 text-xs">{t("attendance.excused")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
