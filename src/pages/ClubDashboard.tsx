@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Building2, Users, Dumbbell, BookOpen, ClipboardList, Calendar,
+  Building2, Users, BookOpen, ClipboardList, Calendar,
   Plus, UserPlus, Sparkles, ArrowRight, Activity, UserSquare2, AlertTriangle,
+  Trophy, Megaphone, Target,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useActiveClub, useClubPermissions } from "@/hooks/useClubs";
@@ -11,10 +12,13 @@ import { useActivityFeed } from "@/hooks/useActivityFeed";
 import { useProfiles } from "@/hooks/useProfiles";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useScheduled } from "@/hooks/useScheduled";
+import { useMatches } from "@/hooks/useMatches";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { useState } from "react";
 import { InviteDialog } from "@/components/club/InviteDialog";
 import { TeamForm } from "@/components/club/TeamForm";
-import { differenceInDays, parseISO } from "date-fns";
+import { AnnouncementForm } from "@/components/club/AnnouncementForm";
+import { differenceInDays, parseISO, format, isAfter, startOfDay } from "date-fns";
 
 function StatTile({ icon: Icon, label, value, to }: { icon: any; label: string; value: number; to?: string }) {
   const inner = (
@@ -56,12 +60,39 @@ export default function ClubDashboard() {
   const { data: profiles = {} } = useProfiles(activity.map((a) => a.user_id ?? ""));
   const { data: players = [] } = usePlayers(active?.id ?? null);
   const { data: scheduled = [] } = useScheduled();
+  const { data: matches = [] } = useMatches(active?.id ?? null);
+  const { data: announcements = [] } = useAnnouncements(active?.id ?? null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
 
   if (!active) {
     return <PageShell title={t("nav.club")}><p className="text-sm text-muted-foreground">No club selected.</p></PageShell>;
   }
+
+  const today = startOfDay(new Date());
+
+  // Upcoming matches (next 5)
+  const upcomingMatches = matches
+    .filter((m) => m.status === "scheduled" && isAfter(parseISO(m.match_date), today))
+    .sort((a, b) => a.match_date.localeCompare(b.match_date))
+    .slice(0, 5);
+
+  // Recent match results
+  const recentResults = matches
+    .filter((m) => m.status === "completed")
+    .sort((a, b) => b.match_date.localeCompare(a.match_date))
+    .slice(0, 3);
+
+  // Attendance to record (sessions in the last 7 days with no attendance yet)
+  const attendanceAlerts = scheduled.filter((s) => {
+    const d = parseISO(s.scheduled_date);
+    const diff = differenceInDays(today, d);
+    return diff >= 0 && diff <= 7;
+  }).slice(0, 3);
+
+  // Recent announcements (top 3)
+  const recentAnnouncements = announcements.slice(0, 3);
 
   return (
     <PageShell title={active.name} subtitle={active.is_personal ? "Personal workspace" : "Club dashboard"}>
@@ -82,38 +113,29 @@ export default function ClubDashboard() {
         <StatTile icon={Users} label="Coaches" value={stats?.coaches ?? 0} to="/club/coaches" />
         <StatTile icon={Building2} label="Teams" value={stats?.teams ?? 0} to="/club/teams" />
         <StatTile icon={UserSquare2} label="Players" value={players.length} to="/club/players" />
-        <StatTile icon={Dumbbell} label="Exercises" value={stats?.exercises ?? 0} to="/club/library" />
+        <StatTile icon={Trophy} label="Matches" value={matches.length} to="/club/matches" />
         <StatTile icon={BookOpen} label="Trainings" value={stats?.trainings ?? 0} to="/club/library" />
       </div>
 
       {/* Attendance alerts */}
-      {(() => {
-        const today = new Date();
-        const upcomingScheduled = scheduled.filter((s) => {
-          const d = parseISO(s.scheduled_date);
-          const diff = differenceInDays(d, today);
-          return diff >= -1 && diff <= 7;
-        }).slice(0, 5);
-        if (upcomingScheduled.length === 0) return null;
-        return (
-          <div className="mb-6 bg-amber-500/5 border border-amber-500/30 rounded-lg p-4">
-            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="w-4 h-4" /> Attendance to record
-            </h2>
-            <ul className="space-y-1.5">
-              {upcomingScheduled.map((s) => (
-                <li key={s.id}>
-                  <Link to={`/calendar/${s.id}/attendance`}
-                    className="flex items-center justify-between px-3 py-2 rounded-md bg-card border border-border hover:border-primary/40 transition-colors">
-                    <span className="text-sm font-medium">{s.scheduled_date}</span>
-                    <span className="text-xs text-primary">Mark attendance →</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })()}
+      {attendanceAlerts.length > 0 && (
+        <div className="mb-6 bg-amber-500/5 border border-amber-500/30 rounded-lg p-4">
+          <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="w-4 h-4" /> Attendance to record
+          </h2>
+          <ul className="space-y-1.5">
+            {attendanceAlerts.map((s) => (
+              <li key={s.id}>
+                <Link to={`/calendar/${s.id}/attendance`}
+                  className="flex items-center justify-between px-3 py-2 rounded-md bg-card border border-border hover:border-amber-400/60 transition-colors">
+                  <span className="text-sm font-medium">{format(parseISO(s.scheduled_date), "EEE d MMM")}</span>
+                  <span className="text-xs text-amber-600 dark:text-amber-400">Mark attendance →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Quick actions */}
       {perms.canCreate && (
@@ -124,14 +146,47 @@ export default function ClubDashboard() {
             <ActionButton icon={Sparkles} label="Create exercise" onClick={() => window.dispatchEvent(new CustomEvent("app:open", { detail: "create" }))} />
             {perms.canInvite && <ActionButton icon={UserPlus} label="Invite coach" onClick={() => setInviteOpen(true)} />}
             {perms.canEdit && <ActionButton icon={ClipboardList} label="Create team" onClick={() => setTeamOpen(true)} />}
+            <ActionButton icon={Trophy} label="Schedule match" to="/club/matches" />
+            <ActionButton icon={Megaphone} label="Post announcement" onClick={() => setAnnouncementOpen(true)} />
           </div>
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        {/* Upcoming matches */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2"><Trophy className="w-4 h-4 text-primary" /> Upcoming Matches</h2>
+            <Link to="/club/matches" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
+          {upcomingMatches.length > 0 ? (
+            <div className="space-y-1.5">
+              {upcomingMatches.map((m) => (
+                <Link key={m.id} to={`/club/matches/${m.id}`}
+                  className="flex items-center justify-between bg-card border border-border rounded-md px-3 py-2 hover:border-primary/40 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">vs {m.opponent}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {m.venue === "home" ? "Home" : "Away"} · {m.competition ?? m.match_type}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground tabular-nums ml-2 flex-shrink-0">
+                    {format(parseISO(m.match_date), "d MMM")}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No upcoming matches scheduled.</p>
+          )}
+        </section>
+
         {/* Upcoming trainings */}
         <section>
-          <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Calendar className="w-4 h-4" /> Upcoming trainings</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Upcoming Trainings</h2>
+            <Link to="/calendar" className="text-xs text-primary hover:underline">Calendar</Link>
+          </div>
           {stats?.upcoming?.length ? (
             <div className="space-y-1.5">
               {stats.upcoming.map((s) => (
@@ -140,7 +195,7 @@ export default function ClubDashboard() {
                     <p className="text-sm font-medium">{s.name}</p>
                     <p className="text-[11px] text-muted-foreground">{s.age_group}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground tabular-nums">{s.date}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{format(parseISO(s.date), "d MMM")}</span>
                 </div>
               ))}
             </div>
@@ -149,12 +204,36 @@ export default function ClubDashboard() {
           )}
         </section>
 
+        {/* Recent announcements */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> Announcements</h2>
+            <Link to="/club/announcements" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
+          {recentAnnouncements.length > 0 ? (
+            <div className="space-y-1.5">
+              {recentAnnouncements.map((a) => (
+                <Link key={a.id} to="/club/announcements"
+                  className="block bg-card border border-border rounded-md px-3 py-2 hover:border-primary/40 transition-colors">
+                  <p className="text-sm font-medium truncate">{a.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{a.body}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No announcements yet.</p>
+          )}
+        </section>
+
         {/* Recent activity */}
         <section>
-          <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Activity className="w-4 h-4" /> Recent activity</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> Recent Activity</h2>
+            <Link to="/club/activity" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
           {activity.length ? (
             <ul className="space-y-1.5">
-              {activity.slice(0, 6).map((a) => {
+              {activity.slice(0, 5).map((a) => {
                 const p = a.user_id ? profiles[a.user_id] : null;
                 return (
                   <li key={a.id} className="bg-card border border-border rounded-md px-3 py-2 text-xs">
@@ -165,7 +244,6 @@ export default function ClubDashboard() {
                   </li>
                 );
               })}
-              <li><Link to="/club/activity" className="text-xs text-primary hover:underline">See all →</Link></li>
             </ul>
           ) : (
             <p className="text-xs text-muted-foreground">No activity yet.</p>
@@ -173,8 +251,30 @@ export default function ClubDashboard() {
         </section>
       </div>
 
+      {/* Recent results */}
+      {recentResults.length > 0 && (
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Recent Results</h2>
+            <Link to="/club/matches" className="text-xs text-primary hover:underline">All matches</Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recentResults.map((m) => (
+              <Link key={m.id} to={`/club/matches/${m.id}`}
+                className="bg-card border border-border rounded-lg px-4 py-3 hover:border-primary/40 transition-colors min-w-[160px]">
+                <p className="text-xs text-muted-foreground">vs {m.opponent}</p>
+                <p className="text-sm font-medium mt-0.5">{format(parseISO(m.match_date), "d MMM yyyy")}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {inviteOpen && <InviteDialog clubId={active.id} onClose={() => setInviteOpen(false)} />}
       {teamOpen && <TeamForm clubId={active.id} onClose={() => setTeamOpen(false)} />}
+      {announcementOpen && (
+        <AnnouncementForm clubId={active.id} onClose={() => setAnnouncementOpen(false)} />
+      )}
     </PageShell>
   );
 }

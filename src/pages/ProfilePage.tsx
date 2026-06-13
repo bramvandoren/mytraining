@@ -16,7 +16,7 @@ interface ProfileRow {
 
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,6 +79,7 @@ export default function ProfilePage() {
       const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
       if (error) throw error;
       setProfile((p) => (p ? { ...p, avatar_url: url } : p));
+      await refreshProfile();
       toast.success(t("profile.avatarUpdated"));
     } catch (err: any) {
       toast.error(err?.message || t("profile.avatarFailed"));
@@ -94,6 +95,7 @@ export default function ProfilePage() {
     if (error) toast.error(error.message);
     else {
       setProfile({ ...profile, avatar_url: null });
+      await refreshProfile();
       toast.success(t("profile.avatarRemoved"));
     }
     setAvatarBusy(false);
@@ -108,6 +110,7 @@ export default function ProfilePage() {
     if (error) toast.error(error.message);
     else {
       setProfile((p) => (p ? { ...p, display_name: v } : p));
+      await refreshProfile();
       toast.success(t("profile.saved"));
     }
     setSavingName(false);
@@ -177,7 +180,9 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold truncate">{profile?.display_name}</h2>
-              <p className="text-xs text-muted-foreground font-mono mt-0.5">@{profile?.username}</p>
+              {profile?.username && (
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">@{profile.username}</p>
+              )}
               <p className="text-xs text-muted-foreground mt-1 truncate">{user.email}</p>
               {profile?.avatar_url && (
                 <button
@@ -197,18 +202,20 @@ export default function ProfilePage() {
         {/* Username (read-only) + Display name */}
         <Section title={t("profile.identity")} icon={UserIcon}>
           <div className="space-y-4">
-            <FieldRow label={t("auth.username")} hint={t("profile.usernameLocked")}>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={profile?.username ?? ""}
-                  disabled
-                  readOnly
-                  className="w-full h-10 px-3 pr-9 text-sm bg-muted/60 border border-border rounded-lg text-muted-foreground cursor-not-allowed font-mono"
-                />
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-            </FieldRow>
+            {profile?.username && (
+              <FieldRow label={t("auth.username")} hint={t("profile.usernameLocked")}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={profile.username}
+                    disabled
+                    readOnly
+                    className="w-full h-10 px-3 pr-9 text-sm bg-muted/60 border border-border rounded-lg text-muted-foreground cursor-not-allowed font-mono"
+                  />
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+              </FieldRow>
+            )}
 
             <form onSubmit={handleSaveName} className="space-y-2">
               <FieldRow label={t("auth.displayName")}>

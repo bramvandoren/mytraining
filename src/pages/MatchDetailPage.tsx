@@ -10,8 +10,19 @@ import { MatchForm } from "@/components/matches/MatchForm";
 import { SquadSelector } from "@/components/matches/SquadSelector";
 import { LineupEditor } from "@/components/matches/LineupEditor";
 import { MatchReportForm } from "@/components/matches/MatchReportForm";
+import { AvailabilityPanel } from "@/components/matches/AvailabilityPanel";
+import { MatchPreparation } from "@/components/matches/MatchPreparation";
 
-type Tab = "overview" | "squad" | "lineup" | "report";
+type Tab = "overview" | "availability" | "preparation" | "squad" | "lineup" | "report";
+
+const TAB_LABELS: Record<Tab, string> = {
+  overview: "Overview",
+  availability: "Availability",
+  preparation: "Preparation",
+  squad: "Squad",
+  lineup: "Lineup",
+  report: "Report",
+};
 
 export default function MatchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,12 +66,12 @@ export default function MatchDetailPage() {
 
       <div className="border-b border-border mb-4 overflow-x-auto">
         <div className="flex gap-1 min-w-max">
-          {(["overview", "squad", "lineup", "report"] as Tab[]).map((t) => (
+          {(["overview", "availability", "preparation", "squad", "lineup", "report"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 h-10 text-sm font-medium border-b-2 transition-colors ${
                 tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </div>
@@ -68,8 +79,34 @@ export default function MatchDetailPage() {
 
       {tab === "overview" && (
         <div className="space-y-3 text-sm">
-          <p className="text-muted-foreground">Use the tabs above to select the match squad, build a lineup on the pitch, and complete the match report.</p>
+          <p className="text-muted-foreground">
+            Use the tabs above to manage player availability, add match preparation notes, select the squad, build the lineup, and complete the match report.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3 pt-2">
+            {(["availability", "preparation", "squad", "lineup", "report"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="text-left bg-card border border-border rounded-lg p-3 hover:border-primary/40 transition-colors"
+              >
+                <p className="text-sm font-medium">{TAB_LABELS[t]}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t === "availability" && "Track who can play"}
+                  {t === "preparation" && "Tactics & objectives"}
+                  {t === "squad" && "Select the matchday squad"}
+                  {t === "lineup" && "Build the starting 11"}
+                  {t === "report" && "Post-match analysis"}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
+      )}
+      {tab === "availability" && (
+        <AvailabilityPanel matchId={match.id} clubId={active.id} teamId={match.team_id} canManage={perms.canCreate} />
+      )}
+      {tab === "preparation" && (
+        <MatchPreparation matchId={match.id} canEdit={perms.canCreate} />
       )}
       {tab === "squad" && <SquadSelector matchId={match.id} clubId={active.id} teamId={match.team_id} canEdit={perms.canCreate} />}
       {tab === "lineup" && <LineupEditor matchId={match.id} clubId={active.id} teamId={match.team_id} canEdit={perms.canCreate} />}

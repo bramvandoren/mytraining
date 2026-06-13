@@ -5,16 +5,18 @@ import {
   Home, Dumbbell, BookOpen, Bookmark, CalendarDays, CalendarRange, Star,
   Globe, Building2, Plus, Sparkles, LogOut, Menu, X, PanelRightOpen,
   PanelRightClose, MoreHorizontal, Settings, Users, Activity, ImageIcon, FolderOpen,
-  UserSquare2, BarChart3, Trophy,
+  UserSquare2, BarChart3, Trophy, Megaphone, Bell,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveClub } from "@/hooks/useClubs";
 import { useSessionStore } from "@/store/sessionStore";
+import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { SessionBuilder } from "@/components/SessionBuilder";
 import { MatchdayMode } from "@/components/MatchdayMode";
 import { CreateExerciseModal } from "@/components/CreateExerciseModal";
 import { GeneratorModal } from "@/components/GeneratorModal";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,8 @@ export default function AppLayout() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = useUnreadNotificationCount();
 
   const NAV = [
     { to: "/", label: t("nav.dashboard"), icon: Home, end: true },
@@ -61,6 +65,7 @@ export default function AppLayout() {
     { to: "/club/teams", label: "Teams", icon: FolderOpen },
     { to: "/club/players", label: "Players", icon: UserSquare2 },
     { to: "/club/matches", label: "Matches", icon: Trophy },
+    { to: "/club/announcements", label: "Announcements", icon: Megaphone },
     { to: "/club/coaches", label: "Coaches", icon: Users },
     { to: "/club/library", label: "Library", icon: BookOpen },
     { to: "/club/media", label: "Media", icon: ImageIcon },
@@ -95,6 +100,18 @@ export default function AppLayout() {
         <span className="font-semibold tracking-tight flex-1">{t("app.name")}</span>
         <LanguageSwitcher compact />
         <ThemeToggle compact />
+        <button
+          onClick={() => setShowNotifications(true)}
+          className="relative w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+          aria-label="Notifications"
+        >
+          <Bell className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 text-[9px] font-mono tabular-nums bg-primary text-primary-foreground rounded-full px-1 min-w-[14px] h-[14px] flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2.5 mb-1.5">
@@ -212,6 +229,9 @@ export default function AppLayout() {
       <AnimatePresence>
         {showGenerator && <GeneratorModal onClose={() => setShowGenerator(false)} />}
       </AnimatePresence>
+      <AnimatePresence>
+        {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} />}
+      </AnimatePresence>
 
       <div className="min-h-screen flex bg-background">
         <aside className="hidden md:flex w-60 lg:w-64 flex-shrink-0 border-r border-border sticky top-0 h-screen">
@@ -253,6 +273,18 @@ export default function AppLayout() {
             <div className="flex items-center gap-1">
               <ThemeToggle compact />
               <LanguageSwitcher compact />
+              <button
+                onClick={() => setShowNotifications(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-md text-foreground hover:bg-muted relative"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 text-[9px] font-mono tabular-nums bg-primary text-primary-foreground rounded-full px-1 min-w-[16px] h-[16px] flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
               <button
                 onClick={() => setBuilderOpen(true)}
                 className="w-9 h-9 flex items-center justify-center rounded-md text-foreground hover:bg-muted relative"
