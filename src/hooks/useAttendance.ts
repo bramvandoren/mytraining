@@ -76,6 +76,50 @@ export function usePlayerAttendance(playerId: string | null) {
   });
 }
 
+export interface ClubAttendanceRow {
+  id: string;
+  player_id: string;
+  player_name: string;
+  team_id: string | null;
+  status: AttendanceStatus;
+  note: string | null;
+  scheduled_date: string | null;
+  session_name: string | null;
+}
+
+export async function fetchClubAttendance(clubId: string, opts?: { dateFrom?: string; dateTo?: string }) {
+  const { data: players, error: pErr } = await supabase
+    .from("players_view" as any)
+    .select("id, first_name, last_name, current_team_id")
+    .eq("club_id", clubId);
+  if (pErr) throw pErr;
+  const playerMap = new Map((players ?? []).map((p: any) => [p.id, p]));
+  const ids = (players ?? []).map((p: any) => p.id);
+  if (ids.length === 0) return [] as ClubAttendanceRow[];
+
+  let q = supabase
+    .from("attendance_records" as any)
+    .select("id, player_id, status, note, scheduled_trainings!inner(scheduled_date, training_sessions(name))")
+    .in("player_id", ids);
+  if (opts?.dateFrom) q = q.gte("scheduled_trainings.scheduled_date", opts.dateFrom);
+  if (opts?.dateTo) q = q.lte("scheduled_trainings.scheduled_date", opts.dateTo);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((r: any): ClubAttendanceRow => {
+    const p = playerMap.get(r.player_id);
+    return {
+      id: r.id,
+      player_id: r.player_id,
+      player_name: p ? `${p.first_name} ${p.last_name}` : "Unknown",
+      team_id: p?.current_team_id ?? null,
+      status: r.status,
+      note: r.note,
+      scheduled_date: r.scheduled_trainings?.scheduled_date ?? null,
+      session_name: r.scheduled_trainings?.training_sessions?.name ?? null,
+    };
+  });
+}
+
 export const STATUS_META: Record<
   AttendanceStatus,
   { label: string; color: string; ring: string }

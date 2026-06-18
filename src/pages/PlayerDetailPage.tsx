@@ -7,8 +7,10 @@ import { useActiveClub, useClubPermissions } from "@/hooks/useClubs";
 import { usePlayer, useArchivePlayer, POSITION_LABEL } from "@/hooks/usePlayers";
 import { useTeams } from "@/hooks/useTeams";
 import { usePlayerAttendance, STATUS_META } from "@/hooks/useAttendance";
+import { usePlayerEvaluations, useDeleteEvaluation, RATING_FIELDS } from "@/hooks/usePlayerEvaluations";
 import { PlayerForm } from "@/components/players/PlayerForm";
 import { TransferDialog } from "@/components/players/TransferDialog";
+import { EvaluationForm } from "@/components/players/EvaluationForm";
 
 export default function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,9 +19,12 @@ export default function PlayerDetailPage() {
   const { data: player, isLoading } = usePlayer(id ?? null);
   const { data: teams = [] } = useTeams(active?.id ?? null);
   const { data: attendance = [] } = usePlayerAttendance(id ?? null);
+  const { data: evaluations = [] } = usePlayerEvaluations(id ?? null);
+  const deleteEvaluation = useDeleteEvaluation();
   const archive = useArchivePlayer();
   const [editing, setEditing] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
 
   const team = useMemo(() => teams.find((t) => t.id === player?.current_team_id), [teams, player]);
 
@@ -123,10 +128,67 @@ export default function PlayerDetailPage() {
             </ul>
           )}
         </section>
+
+        <section className="md:col-span-3 bg-card border border-border rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">Evaluations</h2>
+            {perms.canCreate && (
+              <button
+                onClick={() => setEvaluating(true)}
+                className="px-3 h-8 rounded-md border border-border hover:bg-muted text-xs"
+              >
+                Add evaluation
+              </button>
+            )}
+          </div>
+          {evaluations.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No evaluations yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {evaluations.map((ev) => (
+                <div key={ev.id} className="border border-border rounded-md p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground">{ev.evaluation_date}</span>
+                    {perms.canEdit && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Delete this evaluation?")) return;
+                          try {
+                            await deleteEvaluation.mutateAsync({ id: ev.id, playerId: player.id });
+                            toast.success("Deleted");
+                          } catch (e: any) { toast.error(e.message); }
+                        }}
+                        className="text-xs text-muted-foreground hover:text-rose-500"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3 mb-2">
+                    {RATING_FIELDS.map(({ key, label }) => {
+                      const value = (ev as any)[key] as number | null;
+                      if (value == null) return null;
+                      return (
+                        <span key={key} className="text-xs">
+                          <span className="text-muted-foreground">{label}: </span>
+                          <span className="font-medium">{value}/5</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {ev.strengths && <p className="text-sm"><span className="text-muted-foreground">Strengths: </span>{ev.strengths}</p>}
+                  {ev.areas_to_improve && <p className="text-sm"><span className="text-muted-foreground">Areas to improve: </span>{ev.areas_to_improve}</p>}
+                  {ev.coach_notes && <p className="text-sm"><span className="text-muted-foreground">Notes: </span>{ev.coach_notes}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {editing && <PlayerForm clubId={player.club_id} player={player} onClose={() => setEditing(false)} />}
       {transferring && <TransferDialog clubId={player.club_id} playerId={player.id} currentTeamId={player.current_team_id} onClose={() => setTransferring(false)} />}
+      {evaluating && <EvaluationForm clubId={player.club_id} playerId={player.id} onClose={() => setEvaluating(false)} />}
     </PageShell>
   );
 }

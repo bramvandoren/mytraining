@@ -95,32 +95,36 @@ export const SQUAD_STATUS_COLOR: Record<SquadStatus, string> = {
 };
 
 /* ===== matches ===== */
+export async function fetchMatches(clubId: string) {
+  const { data, error } = await supabase
+    .from("matches" as any)
+    .select("*")
+    .eq("club_id", clubId)
+    .order("match_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as Match[];
+}
+
 export function useMatches(clubId: string | null) {
   return useQuery({
     queryKey: ["matches", clubId],
     enabled: !!clubId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("matches" as any)
-        .select("*")
-        .eq("club_id", clubId!)
-        .order("match_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Match[];
-    },
+    queryFn: () => fetchMatches(clubId!),
   });
+}
+
+export async function fetchMatch(id: string) {
+  const { data, error } = await supabase
+    .from("matches" as any).select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data as unknown as Match | null;
 }
 
 export function useMatch(id: string | null) {
   return useQuery({
     queryKey: ["match", id],
     enabled: !!id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("matches" as any).select("*").eq("id", id!).maybeSingle();
-      if (error) throw error;
-      return data as unknown as Match | null;
-    },
+    queryFn: () => fetchMatch(id!),
   });
 }
 
@@ -187,16 +191,18 @@ export function useDuplicateMatch() {
 }
 
 /* ===== squad ===== */
+export async function fetchMatchSquad(matchId: string) {
+  const { data, error } = await supabase
+    .from("match_squads" as any).select("*").eq("match_id", matchId);
+  if (error) throw error;
+  return (data ?? []) as unknown as MatchSquad[];
+}
+
 export function useMatchSquad(matchId: string | null) {
   return useQuery({
     queryKey: ["match_squad", matchId],
     enabled: !!matchId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("match_squads" as any).select("*").eq("match_id", matchId!);
-      if (error) throw error;
-      return (data ?? []) as unknown as MatchSquad[];
-    },
+    queryFn: () => fetchMatchSquad(matchId!),
   });
 }
 
@@ -246,16 +252,18 @@ export function useSaveLineup() {
 }
 
 /* ===== report ===== */
+export async function fetchMatchReport(matchId: string) {
+  const { data, error } = await supabase
+    .from("match_reports" as any).select("*").eq("match_id", matchId).maybeSingle();
+  if (error) throw error;
+  return data as unknown as MatchReport | null;
+}
+
 export function useMatchReport(matchId: string | null) {
   return useQuery({
     queryKey: ["match_report", matchId],
     enabled: !!matchId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("match_reports" as any).select("*").eq("match_id", matchId!).maybeSingle();
-      if (error) throw error;
-      return data as unknown as MatchReport | null;
-    },
+    queryFn: () => fetchMatchReport(matchId!),
   });
 }
 
@@ -275,16 +283,18 @@ export function useSaveReport() {
 }
 
 /* ===== events ===== */
+export async function fetchMatchEvents(matchId: string) {
+  const { data, error } = await supabase
+    .from("match_events" as any).select("*").eq("match_id", matchId).order("minute", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as MatchEvent[];
+}
+
 export function useMatchEvents(matchId: string | null) {
   return useQuery({
     queryKey: ["match_events", matchId],
     enabled: !!matchId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("match_events" as any).select("*").eq("match_id", matchId!).order("minute", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as MatchEvent[];
-    },
+    queryFn: () => fetchMatchEvents(matchId!),
   });
 }
 

@@ -10,6 +10,7 @@ export interface Club {
   name: string;
   owner_id: string;
   is_personal: boolean;
+  logo_storage_path: string | null;
 }
 
 export interface ClubMember {
@@ -133,6 +134,37 @@ export function useAddMember() {
       if (error) throw error;
     },
     onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ["club_members", v.clubId] }),
+  });
+}
+
+export function useUpdateClub() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from("clubs" as any).update({ name } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clubs"] }),
+  });
+}
+
+export function useUpdateClubLogo() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clubId, file }: { clubId: string; file: File | null }) => {
+      if (!user) throw new Error("Not authed");
+      let logo_storage_path: string | null = null;
+      if (file) {
+        const safeName = file.name.replace(/[^\w.\-]/g, "_");
+        logo_storage_path = `${clubId}/logo/${Date.now()}_${safeName}`;
+        const { error: upErr } = await supabase.storage.from("club-media").upload(logo_storage_path, file);
+        if (upErr) throw upErr;
+      }
+      const { error } = await supabase.from("clubs" as any).update({ logo_storage_path } as any).eq("id", clubId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clubs"] }),
   });
 }
 

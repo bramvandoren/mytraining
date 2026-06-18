@@ -15,19 +15,21 @@ export interface MatchPreparation {
   updated_at: string;
 }
 
+export async function fetchMatchPreparation(matchId: string) {
+  const { data, error } = await supabase
+    .from("match_preparation" as any)
+    .select("*")
+    .eq("match_id", matchId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as unknown as MatchPreparation | null;
+}
+
 export function useMatchPreparation(matchId: string | null) {
   return useQuery({
     queryKey: ["match_preparation", matchId],
     enabled: !!matchId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("match_preparation" as any)
-        .select("*")
-        .eq("match_id", matchId!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as unknown as MatchPreparation | null;
-    },
+    queryFn: () => fetchMatchPreparation(matchId!),
   });
 }
 

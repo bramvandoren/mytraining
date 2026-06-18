@@ -5,7 +5,7 @@ import {
   Home, Dumbbell, BookOpen, Bookmark, CalendarDays, CalendarRange, Star,
   Globe, Building2, Plus, Sparkles, LogOut, Menu, X, PanelRightOpen,
   PanelRightClose, MoreHorizontal, Settings, Users, Activity, ImageIcon, FolderOpen,
-  UserSquare2, BarChart3, Trophy, Megaphone, Bell,
+  UserSquare2, BarChart3, Trophy, Megaphone, Bell, FileDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,6 +71,8 @@ export default function AppLayout() {
     { to: "/club/media", label: "Media", icon: ImageIcon },
     { to: "/club/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/club/activity", label: "Activity", icon: Activity },
+    { to: "/club/exports", label: "Export Center", icon: FileDown },
+    { to: "/club/settings", label: "Settings", icon: Settings },
   ];
 
   const MOBILE_BOTTOM = NAV.slice(0, 4);

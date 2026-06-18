@@ -11,29 +11,31 @@ export interface CloudSession extends TrainingSession {
   is_shared: boolean;
 }
 
+export async function fetchTrainingSessions() {
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r: any): CloudSession => ({
+    id: r.id,
+    name: r.name,
+    date: r.date,
+    ageGroup: r.age_group as AgeGroup,
+    exercises: (r.exercises ?? []) as SessionExercise[],
+    createdAt: r.created_at,
+    user_id: r.user_id,
+    total_duration: r.total_duration,
+    club_id: r.club_id ?? null,
+    share_token: r.share_token ?? null,
+    is_shared: !!r.is_shared,
+  }));
+}
+
 export function useTrainingSessions() {
   return useQuery({
     queryKey: ["training_sessions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("training_sessions")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((r: any): CloudSession => ({
-        id: r.id,
-        name: r.name,
-        date: r.date,
-        ageGroup: r.age_group as AgeGroup,
-        exercises: (r.exercises ?? []) as SessionExercise[],
-        createdAt: r.created_at,
-        user_id: r.user_id,
-        total_duration: r.total_duration,
-        club_id: r.club_id ?? null,
-        share_token: r.share_token ?? null,
-        is_shared: !!r.is_shared,
-      }));
-    },
+    queryFn: fetchTrainingSessions,
   });
 }
 

@@ -32,21 +32,23 @@ export type PlayerInput = Omit<
   "id" | "created_at" | "updated_at" | "created_by" | "current_team_id"
 > & { club_id: string; first_name: string; last_name: string };
 
+export async function fetchPlayers(clubId: string, opts?: { includeArchived?: boolean }) {
+  let q = supabase
+    .from("players_view" as any)
+    .select("*")
+    .eq("club_id", clubId)
+    .order("last_name", { ascending: true });
+  if (!opts?.includeArchived) q = q.is("archived_at", null);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as unknown as Player[];
+}
+
 export function usePlayers(clubId: string | null, opts?: { includeArchived?: boolean }) {
   return useQuery({
     queryKey: ["players", clubId, opts?.includeArchived ?? false],
     enabled: !!clubId,
-    queryFn: async () => {
-      let q = supabase
-        .from("players_view" as any)
-        .select("*")
-        .eq("club_id", clubId!)
-        .order("last_name", { ascending: true });
-      if (!opts?.includeArchived) q = q.is("archived_at", null);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as unknown as Player[];
-    },
+    queryFn: () => fetchPlayers(clubId!, opts),
   });
 }
 
@@ -66,27 +68,29 @@ export function usePlayer(id: string | null) {
   });
 }
 
+export async function fetchTeamRoster(teamId: string) {
+  const { data: assigns, error } = await supabase
+    .from("player_team_assignments" as any)
+    .select("player_id")
+    .eq("team_id", teamId)
+    .is("ended_at", null);
+  if (error) throw error;
+  const ids = (assigns ?? []).map((a: any) => a.player_id);
+  if (ids.length === 0) return [] as Player[];
+  const { data: players, error: e2 } = await supabase
+    .from("players_view" as any)
+    .select("*")
+    .in("id", ids)
+    .is("archived_at", null);
+  if (e2) throw e2;
+  return ((players ?? []) as unknown) as Player[];
+}
+
 export function useTeamRoster(teamId: string | null) {
   return useQuery({
     queryKey: ["team_roster", teamId],
     enabled: !!teamId,
-    queryFn: async () => {
-      const { data: assigns, error } = await supabase
-        .from("player_team_assignments" as any)
-        .select("player_id")
-        .eq("team_id", teamId!)
-        .is("ended_at", null);
-      if (error) throw error;
-      const ids = (assigns ?? []).map((a: any) => a.player_id);
-      if (ids.length === 0) return [] as Player[];
-      const { data: players, error: e2 } = await supabase
-        .from("players_view" as any)
-        .select("*")
-        .in("id", ids)
-        .is("archived_at", null);
-      if (e2) throw e2;
-      return ((players ?? []) as unknown) as Player[];
-    },
+    queryFn: () => fetchTeamRoster(teamId!),
   });
 }
 
